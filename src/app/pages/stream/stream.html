@@ -33,19 +33,15 @@
         <h2 class="font-semibold text-sm">Fuentes RTSP guardadas</h2>
         @if (sources().length > 0) {
         <span class="text-xs bg-gray-700 px-2 py-0.5 rounded-full text-gray-300">
-          {{ selectedIds().size }} / {{ sources().length }} seleccionadas
+          {{ selectedIds().size }} / {{ sources().length }} sel.
         </span>
         }
       </div>
       <div class="flex items-center gap-2">
         @if (sources().length > 0) {
-        <button (click)="selectAll()" class="text-xs text-blue-400 hover:text-blue-300 transition-colors">
-          Todas
-        </button>
+        <button (click)="selectAll()" class="text-xs text-blue-400 hover:text-blue-300 transition-colors">Todas</button>
         <span class="text-gray-600">|</span>
-        <button (click)="clearSelection()" class="text-xs text-gray-400 hover:text-gray-300 transition-colors">
-          Ninguna
-        </button>
+        <button (click)="clearSelection()" class="text-xs text-gray-400 hover:text-gray-300 transition-colors">Ninguna</button>
         }
         <button (click)="openAddForm()"
           class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-semibold transition-colors">
@@ -53,6 +49,33 @@
         </button>
       </div>
     </div>
+
+    <!-- Search bar -->
+    @if (sources().length > 0) {
+    <div class="px-5 py-2.5 border-b border-gray-700">
+      <div class="relative">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input
+          type="text"
+          [value]="searchQuery()"
+          (input)="onSearchChange($any($event.target).value)"
+          placeholder="Buscar por nombre, URL u observación..."
+          class="w-full bg-gray-700 text-white text-sm rounded pl-9 pr-8 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+        @if (searchQuery()) {
+        <button (click)="onSearchChange('')"
+          class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-lg leading-none">×</button>
+        }
+      </div>
+      @if (searchQuery() && filteredSources().length === 0) {
+      <p class="text-xs text-gray-500 mt-1.5">Sin resultados para "{{ searchQuery() }}"</p>
+      }
+      @if (searchQuery() && filteredSources().length > 0) {
+      <p class="text-xs text-gray-500 mt-1.5">{{ filteredSources().length }} resultado(s)</p>
+      }
+    </div>
+    }
 
     <!-- Add form -->
     @if (showAddForm()) {
@@ -102,7 +125,7 @@
     </div>
     } @else {
     <div class="divide-y divide-gray-700">
-      @for (src of sources(); track src.id) {
+      @for (src of pagedSources(); track src.id) {
 
       <!-- Normal row -->
       @if (editingId() !== src.id) {
@@ -181,6 +204,31 @@
 
       }
     </div>
+
+    <!-- Pagination -->
+    @if (totalPages() > 1) {
+    <div class="flex items-center justify-between px-5 py-2.5 border-t border-gray-700 text-xs text-gray-400">
+      <span>
+        Página {{ currentPage() }} de {{ totalPages() }}
+        &nbsp;·&nbsp; {{ filteredSources().length }} fuente(s)
+      </span>
+      <div class="flex items-center gap-1">
+        <button (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1"
+          class="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-30 transition-colors">‹</button>
+
+        @for (p of pageNumbers(); track p) {
+        <button (click)="goToPage(p)"
+          class="px-2.5 py-1 rounded transition-colors"
+          [class]="p === currentPage() ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'">
+          {{ p }}
+        </button>
+        }
+
+        <button (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() === totalPages()"
+          class="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-30 transition-colors">›</button>
+      </div>
+    </div>
+    }
     }
 
   </div>
@@ -280,33 +328,19 @@
       }
     </div>
 
-    <!-- Mosaic -->
+    <!-- Mosaic: 1 single <img>, full GPU composite, zero CPU -->
     @if (viewMode() === 'mosaic') {
     <div class="p-1">
-      <div class="grid gap-1" [class]="gridColsClass()">
-        @for (i of cameraIndices(); track i) {
-        <div class="relative group cursor-pointer overflow-hidden rounded" (click)="goSingle(i)">
-          <img [src]="cameraUrl(i)" (error)="onImgError()" alt="Cámara {{ i + 1 }}" class="w-full aspect-video object-cover block" />
-          <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-1.5">
-            <span class="text-xs font-semibold text-white flex items-center gap-1.5">
-              <span class="w-1.5 h-1.5 bg-green-400 rounded-full inline-block"></span>
-              Cámara {{ i + 1 }}
-            </span>
-          </div>
-          <div
-            class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-all">
-            <span class="text-white text-2xl opacity-0 group-hover:opacity-100 transition-opacity">⛶</span>
-          </div>
-        </div>
-        }
-      </div>
+      <img [src]="fullMosaicUrl()" (error)="onImgError()"
+        alt="Mosaico completo" class="w-full rounded block" />
     </div>
     }
 
-    <!-- Single camera -->
+    <!-- Single camera: 1 <img> for the selected camera -->
     @if (viewMode() === 'single') {
     <div class="p-1">
-      <img [src]="singleCameraUrl()" (error)="onImgError()" alt="Cámara {{ selectedCamera() + 1 }}" class="w-full rounded block" />
+      <img [src]="singleCameraUrl()" (error)="onImgError()"
+        alt="Cámara {{ selectedCamera() + 1 }}" class="w-full rounded block" />
     </div>
     }
 

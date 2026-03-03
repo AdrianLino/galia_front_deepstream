@@ -43,6 +43,36 @@ export class StreamComponent implements OnInit {
   /** IDs of sources currently selected to stream */
   selectedIds = signal<Set<string>>(new Set());
 
+  // Search & pagination
+  searchQuery = signal('');
+  readonly pageSize = 8;
+  currentPage = signal(1);
+
+  filteredSources = computed(() => {
+    const q = this.searchQuery().toLowerCase().trim();
+    if (!q) return this.sources();
+    return this.sources().filter(
+      (s) =>
+        s.name.toLowerCase().includes(q) ||
+        s.rtsp_url.toLowerCase().includes(q) ||
+        (s.observation ?? '').toLowerCase().includes(q)
+    );
+  });
+
+  totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.filteredSources().length / this.pageSize))
+  );
+
+  pagedSources = computed(() => {
+    const page = Math.min(this.currentPage(), this.totalPages());
+    const start = (page - 1) * this.pageSize;
+    return this.filteredSources().slice(start, start + this.pageSize);
+  });
+
+  pageNumbers = computed(() =>
+    Array.from({ length: this.totalPages() }, (_, i) => i + 1)
+  );
+
   // Add-source form
   showAddForm = signal(false);
   newName = '';
@@ -60,25 +90,20 @@ export class StreamComponent implements OnInit {
   editLoading = signal(false);
 
   // ── Computed ──────────────────────────────────────────────────────────────
+
+  /** Full mosaic — 1 single connection, 100% GPU, zero CPU */
+  fullMosaicUrl = computed(() => `${this.viewUrl}?_t=${this.streamRevision()}`);
+
+  /** Single camera view — 1 connection */
   singleCameraUrl = computed(
     () => `${this.viewUrl}?camera=${this.selectedCamera()}&_t=${this.streamRevision()}`
   );
 
   cameraIndices = computed(() => {
-    // Use streamSourcesCount (set from start() response) when streaming,
-    // fall back to status when not streaming (e.g. after page reload with pipeline already running).
     const n = this.showStream()
       ? this.streamSourcesCount()
       : (this.status()?.sources_count ?? 0);
     return Array.from({ length: n }, (_, i) => i);
-  });
-
-  gridColsClass = computed(() => {
-    const n = this.cameraIndices().length;
-    if (n <= 1) return 'grid-cols-1';
-    if (n <= 4) return 'grid-cols-2';
-    if (n <= 9) return 'grid-cols-3';
-    return 'grid-cols-4';
   });
 
   selectedSources = computed(() =>
@@ -188,12 +213,6 @@ export class StreamComponent implements OnInit {
     this.selectedCamera.update((c) => (c - 1 + total) % total);
   }
 
-  /** Build MJPEG URL for a specific camera index, reactive to streamRevision */
-  cameraUrl(index: number): string {
-    const rev = this.streamRevision(); // tracked by Angular template
-    return `${this.viewUrl}?camera=${index}&_t=${rev}`;
-  }
-
   /**
    * Called from (error) on any <img>. Waits 1.5 s then increments streamRevision
    * so all cameras get a fresh src and retry the connection.
@@ -221,6 +240,15 @@ export class StreamComponent implements OnInit {
         this.sourcesLoading.set(false);
       },
     });
+  }
+
+  onSearchChange(value: string) {
+    this.searchQuery.set(value);
+    this.currentPage.set(1);
+  }
+
+  goToPage(page: number) {
+    this.currentPage.set(page);
   }
 
   toggleSelect(id: string) {
@@ -272,6 +300,7 @@ export class StreamComponent implements OnInit {
         this.sources.update((list) => [...list, created].sort((a, b) => a.name.localeCompare(b.name)));
         this.addLoading.set(false);
         this.showAddForm.set(false);
+        this.currentPage.set(1);
       },
       error: (err) => {
         this.addError.set(err?.error?.detail ?? 'Error al guardar la fuente.');
