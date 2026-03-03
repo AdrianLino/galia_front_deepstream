@@ -15,6 +15,8 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
          class="text-gray-300 hover:text-white transition-colors">Faces</a>
       <a routerLink="/nvr" routerLinkActive="text-blue-400 font-semibold"
          class="text-gray-300 hover:text-white transition-colors">NVR</a>
+      <a routerLink="/video" routerLinkActive="text-blue-400 font-semibold"
+         class="text-gray-300 hover:text-white transition-colors">Video</a>
     </nav>
   `,
 })

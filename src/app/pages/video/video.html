@@ -1,0 +1,213 @@
+<div class="p-6">
+  <h1 class="text-2xl font-bold mb-6">Video Forense <span class="text-xs text-gray-500 font-normal ml-2">puerto 8001</span></h1>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- LEFT PANEL: Upload + Lista -->
+    <div class="space-y-4">
+
+      <!-- Upload -->
+      <div class="bg-gray-800 rounded-lg p-5 space-y-3">
+        <h2 class="font-semibold">Subir video</h2>
+        <input type="file" accept=".mp4,.mov" (change)="onFileChange($event)"
+               class="w-full text-sm text-gray-300 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-gray-600 file:text-white hover:file:bg-gray-500" />
+        <button (click)="upload()" [disabled]="!uploadFile || uploading()"
+                class="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-500 disabled:opacity-50 text-sm">
+          {{ uploading() ? 'Subiendo...' : 'Procesar video' }}
+        </button>
+        @if (uploadMsg()) {
+          <p class="text-xs text-blue-300">{{ uploadMsg() }}</p>
+        }
+        @if (uploadError()) {
+          <p class="text-xs text-red-400">{{ uploadError() }}</p>
+        }
+      </div>
+
+      <!-- Lista de videos -->
+      <div class="bg-gray-800 rounded-lg p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="font-semibold">Videos procesados</h2>
+          <button (click)="loadList()" class="text-xs text-gray-400 hover:text-white">
+            Actualizar
+          </button>
+        </div>
+
+        @if (listLoading()) {
+          <p class="text-gray-400 text-sm">Cargando...</p>
+        }
+
+        @if (videos().length === 0 && !listLoading()) {
+          <p class="text-gray-500 text-sm">No hay videos. Sube uno para comenzar.</p>
+        }
+
+        <div class="space-y-2">
+          @for (v of videos(); track v.id) {
+            <button (click)="selectById(v.id)"
+                    class="w-full text-left bg-gray-700 hover:bg-gray-600 rounded p-3 text-sm transition-colors"
+                    [class.ring-1]="selectedVideo()?.video_id === v.id"
+                    [class.ring-blue-500]="selectedVideo()?.video_id === v.id">
+              <div class="flex justify-between items-start">
+                <span class="font-medium truncate pr-2">{{ v.original_filename }}</span>
+                <span [class]="statusClass(v.status)" class="text-xs shrink-0">{{ v.status }}</span>
+              </div>
+              <div class="text-gray-400 text-xs mt-1 space-y-0.5">
+                <div>
+                  ID: {{ v.id }}
+                  @if (v.duration_seconds) { · {{ formatTime(v.duration_seconds) }} }
+                  @if (v.fps) { · {{ v.fps | number:'1.0-0' }} fps }
+                </div>
+                @if (v.width && v.height) {
+                  <div>{{ v.width }}×{{ v.height }}</div>
+                }
+                <div>{{ v.processed_at | date:'dd/MM/yy HH:mm' }}</div>
+              </div>
+            </button>
+          }
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT PANEL: Detalle del video seleccionado -->
+    <div class="lg:col-span-2 space-y-4">
+
+      @if (deleteMsg()) {
+        <p class="text-sm text-blue-300">{{ deleteMsg() }}</p>
+      }
+
+      @if (!selectedVideo()) {
+        <div class="bg-gray-800 rounded-lg p-8 text-center text-gray-500">
+          Selecciona un video de la lista o sube uno nuevo.
+        </div>
+      }
+
+      @if (selectedVideo(); as v) {
+
+        <!-- Status card -->
+        <div class="bg-gray-800 rounded-lg p-5">
+          <div class="flex items-start justify-between">
+            <div>
+              <h2 class="font-semibold text-lg">{{ v.original_filename }}</h2>
+              <p class="text-sm text-gray-400 mt-1">ID: {{ v.video_id }}</p>
+            </div>
+            <div class="flex gap-2">
+              @if (v.status === 'done') {
+                <a [href]="downloadUrl(v.video_id)" target="_blank"
+                   class="px-3 py-1 bg-green-700 text-white text-sm rounded hover:bg-green-600">
+                  Descargar
+                </a>
+              }
+              <button (click)="deleteSelected()"
+                      class="px-3 py-1 bg-red-700 text-white text-sm rounded hover:bg-red-600">
+                Eliminar
+              </button>
+            </div>
+          </div>
+
+          <div class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+            <div class="bg-gray-700 rounded p-3">
+              <p class="text-gray-400 text-xs">Estado</p>
+              <p [class]="statusClass(v.status)" class="font-semibold mt-1">{{ v.status }}</p>
+            </div>
+            <div class="bg-gray-700 rounded p-3">
+              <p class="text-gray-400 text-xs">Duración</p>
+              <p class="font-semibold mt-1">
+                {{ v.duration_seconds ? formatTime(v.duration_seconds) : '—' }}
+              </p>
+            </div>
+            <div class="bg-gray-700 rounded p-3">
+              <p class="text-gray-400 text-xs">Segmentos</p>
+              <p class="font-semibold mt-1">{{ v.segments_analyzed }}</p>
+            </div>
+            <div class="bg-gray-700 rounded p-3">
+              <p class="text-gray-400 text-xs">Personas</p>
+              <p class="font-semibold mt-1">{{ v.persons_detected.length }}</p>
+            </div>
+          </div>
+
+          @if (v.persons_detected.length > 0) {
+            <div class="mt-3 flex flex-wrap gap-2">
+              @for (name of v.persons_detected; track name) {
+                <span class="text-xs bg-blue-900 text-blue-200 px-2 py-1 rounded">{{ name }}</span>
+              }
+            </div>
+          }
+
+          @if (v.status === 'processing') {
+            <p class="mt-3 text-sm text-yellow-400 animate-pulse">
+              Procesando… actualizando cada 5 s.
+            </p>
+          }
+
+          @if (v.error_message) {
+            <p class="mt-3 text-sm text-red-400">Error: {{ v.error_message }}</p>
+          }
+        </div>
+
+        <!-- Q&A -->
+        @if (v.status === 'done') {
+          <div class="bg-gray-800 rounded-lg p-5 space-y-3">
+            <h2 class="font-semibold">Pregunta al video</h2>
+            <div class="flex gap-2">
+              <input type="text" [(ngModel)]="question"
+                     placeholder="¿Cuándo entra la persona? ¿Qué ocurre en el minuto 2?"
+                     (keyup.enter)="ask()"
+                     class="flex-1 bg-gray-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+              <button (click)="ask()" [disabled]="askLoading() || !question.trim()"
+                      class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-500 disabled:opacity-50 text-sm">
+                {{ askLoading() ? '...' : 'Preguntar' }}
+              </button>
+            </div>
+
+            @if (askResult(); as r) {
+              <div class="bg-gray-700 rounded p-4 text-sm space-y-2">
+                <p class="text-gray-400 text-xs">Q: {{ r.question }}</p>
+                <p class="whitespace-pre-wrap leading-relaxed">{{ r.answer }}</p>
+                <p class="text-gray-500 text-xs">{{ r.context_segments }} segmentos consultados</p>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Eventos forenses -->
+        @if (v.status === 'done') {
+          <div class="bg-gray-800 rounded-lg p-5">
+            <h2 class="font-semibold mb-4">
+              Eventos forenses
+              @if (eventsLoading()) { <span class="text-gray-400 text-sm font-normal ml-2">cargando...</span> }
+              @if (!eventsLoading() && selectedEvents().length) {
+                <span class="text-gray-400 text-sm font-normal ml-2">({{ selectedEvents().length }})</span>
+              }
+            </h2>
+
+            @if (selectedEvents().length === 0 && !eventsLoading()) {
+              <p class="text-gray-500 text-sm">Sin eventos registrados.</p>
+            }
+
+            <div class="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+              @for (ev of selectedEvents(); track ev.id) {
+                <div class="bg-gray-700 rounded p-4 text-sm">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-gray-400 text-xs font-mono">
+                      {{ formatTime(ev.timestamp_start) }} – {{ formatTime(ev.timestamp_end) }}
+                    </span>
+                    @if (ev.persons_detected.length > 0) {
+                      <div class="flex gap-1 flex-wrap justify-end">
+                        @for (name of ev.persons_detected; track name) {
+                          <span class="text-xs bg-blue-900 text-blue-200 px-2 py-0.5 rounded">{{ name }}</span>
+                        }
+                      </div>
+                    }
+                  </div>
+                  <p class="text-gray-200 leading-relaxed">{{ ev.scene_description }}</p>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+      }
+
+    </div>
+  </div>
+</div>
