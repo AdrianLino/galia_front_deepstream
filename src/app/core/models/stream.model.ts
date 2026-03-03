@@ -38,3 +38,26 @@ export interface StreamStopResponse {
   success: boolean;
   message: string;
 }
+
+// ── RTSP Source management ─────────────────────────────────────────────────
+
+export interface RtspSource {
+  id: string;
+  name: string;
+  rtsp_url: string;
+  observation?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RtspSourceCreate {
+  name: string;
+  rtsp_url: string;
+  observation?: string;
+}
+
+export interface RtspSourceUpdate {
+  name?: string;
+  rtsp_url?: string;
+  observation?: string;
+}

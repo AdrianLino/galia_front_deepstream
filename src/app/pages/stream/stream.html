@@ -1,12 +1,13 @@
-<div class="p-6">
-  <h1 class="text-2xl font-bold mb-6">Stream</h1>
+<div class="p-6 space-y-6">
+  <h1 class="text-2xl font-bold">Stream</h1>
 
-  <!-- Status card -->
+  <!-- ═══════════ STATUS BAR ═══════════ -->
   @if (status(); as s) {
-  <div class="bg-gray-800 rounded-lg p-4 mb-6 flex flex-wrap gap-6 text-sm">
+  <div class="bg-gray-800 rounded-lg p-4 flex flex-wrap gap-6 text-sm">
     <div>
       <span class="text-gray-400">Estado: </span>
-      <span [class]="s.status === 'running' ? 'text-green-400 font-semibold' : 'text-yellow-400 font-semibold'">
+      <span
+        [class]="s.status === 'running' ? 'text-green-400 font-semibold' : 'text-yellow-400 font-semibold'">
         {{ s.status }}
       </span>
     </div>
@@ -23,17 +24,183 @@
   </div>
   }
 
-  <!-- Controls -->
-  <div class="bg-gray-800 rounded-lg p-5 mb-6 space-y-4">
-    <div>
-      <label class="block text-sm text-gray-400 mb-1">
-        Fuentes RTSP (una por línea, vacío = usa .env)
-      </label>
-      <textarea [(ngModel)]="rtspInput" rows="3" placeholder="rtsp://usuario:pass@192.168.1.x:554/stream1"
-        class="w-full bg-gray-700 text-white rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-blue-500">
-      </textarea>
+  <!-- ═══════════ SAVED SOURCES ═══════════ -->
+  <div class="bg-gray-800 rounded-lg overflow-hidden">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between px-5 py-3 border-b border-gray-700">
+      <div class="flex items-center gap-3">
+        <h2 class="font-semibold text-sm">Fuentes RTSP guardadas</h2>
+        @if (sources().length > 0) {
+        <span class="text-xs bg-gray-700 px-2 py-0.5 rounded-full text-gray-300">
+          {{ selectedIds().size }} / {{ sources().length }} seleccionadas
+        </span>
+        }
+      </div>
+      <div class="flex items-center gap-2">
+        @if (sources().length > 0) {
+        <button (click)="selectAll()" class="text-xs text-blue-400 hover:text-blue-300 transition-colors">
+          Todas
+        </button>
+        <span class="text-gray-600">|</span>
+        <button (click)="clearSelection()" class="text-xs text-gray-400 hover:text-gray-300 transition-colors">
+          Ninguna
+        </button>
+        }
+        <button (click)="openAddForm()"
+          class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-semibold transition-colors">
+          + Agregar
+        </button>
+      </div>
     </div>
 
+    <!-- Add form -->
+    @if (showAddForm()) {
+    <div class="border-b border-gray-700 bg-gray-750 px-5 py-4 space-y-3">
+      <p class="text-xs font-semibold text-gray-300 uppercase tracking-wide">Nueva fuente</p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">Nombre <span class="text-red-400">*</span></label>
+          <input [(ngModel)]="newName" type="text" placeholder="Cámara entrada principal"
+            class="w-full bg-gray-700 text-white rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+        </div>
+        <div class="md:col-span-1">
+          <label class="block text-xs text-gray-400 mb-1">URL RTSP <span class="text-red-400">*</span></label>
+          <input [(ngModel)]="newRtsp" type="text" placeholder="rtsp://usuario:pass@192.168.1.x:554/stream1"
+            class="w-full bg-gray-700 text-white rounded px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-blue-500" />
+        </div>
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">Observación</label>
+          <input [(ngModel)]="newObservation" type="text" placeholder="Opcional..."
+            class="w-full bg-gray-700 text-white rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+        </div>
+      </div>
+      @if (addError()) {
+      <p class="text-xs text-red-400">{{ addError() }}</p>
+      }
+      <div class="flex gap-2">
+        <button (click)="saveSource()" [disabled]="addLoading()"
+          class="px-4 py-1.5 bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white rounded text-sm font-semibold transition-colors">
+          {{ addLoading() ? 'Guardando...' : 'Guardar' }}
+        </button>
+        <button (click)="cancelAdd()"
+          class="px-4 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition-colors">
+          Cancelar
+        </button>
+      </div>
+    </div>
+    }
+
+    <!-- Sources list -->
+    @if (sourcesLoading()) {
+    <div class="px-5 py-6 text-sm text-gray-400">Cargando fuentes...</div>
+    } @else if (sourcesError()) {
+    <div class="px-5 py-4 text-sm text-red-400">{{ sourcesError() }}</div>
+    } @else if (sources().length === 0) {
+    <div class="px-5 py-8 text-center text-sm text-gray-500">
+      No hay fuentes guardadas. Agrega una con el botón de arriba.
+    </div>
+    } @else {
+    <div class="divide-y divide-gray-700">
+      @for (src of sources(); track src.id) {
+
+      <!-- Normal row -->
+      @if (editingId() !== src.id) {
+      <div class="flex items-start gap-3 px-5 py-3 hover:bg-gray-750 transition-colors group"
+        [class.bg-blue-950]="isSelected(src.id)">
+
+        <!-- Checkbox -->
+        <div class="pt-0.5">
+          <input type="checkbox" [checked]="isSelected(src.id)" (change)="toggleSelect(src.id)"
+            class="w-4 h-4 accent-blue-500 cursor-pointer" />
+        </div>
+
+        <!-- Info -->
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="font-semibold text-sm text-white truncate">{{ src.name }}</span>
+            @if (isSelected(src.id)) {
+            <span class="text-xs bg-blue-600 text-white px-1.5 py-0.5 rounded">seleccionada</span>
+            }
+          </div>
+          <p class="text-xs font-mono text-gray-400 truncate mt-0.5">{{ src.rtsp_url }}</p>
+          @if (src.observation) {
+          <p class="text-xs text-gray-500 mt-0.5">{{ src.observation }}</p>
+          }
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button (click)="startEdit(src)"
+            class="px-2.5 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded text-xs transition-colors">
+            Editar
+          </button>
+          <button (click)="deleteSource(src.id)"
+            class="px-2.5 py-1 bg-red-900 hover:bg-red-800 text-red-300 rounded text-xs transition-colors">
+            Eliminar
+          </button>
+        </div>
+      </div>
+      }
+
+      <!-- Editing row -->
+      @if (editingId() === src.id) {
+      <div class="px-5 py-4 bg-gray-750 space-y-3">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Nombre</label>
+            <input [(ngModel)]="editName" type="text"
+              class="w-full bg-gray-700 text-white rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">URL RTSP</label>
+            <input [(ngModel)]="editRtsp" type="text"
+              class="w-full bg-gray-700 text-white rounded px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-blue-500" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Observación</label>
+            <input [(ngModel)]="editObservation" type="text"
+              class="w-full bg-gray-700 text-white rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+          </div>
+        </div>
+        @if (editError()) {
+        <p class="text-xs text-red-400">{{ editError() }}</p>
+        }
+        <div class="flex gap-2">
+          <button (click)="saveEdit(src.id)" [disabled]="editLoading()"
+            class="px-4 py-1.5 bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white rounded text-sm font-semibold transition-colors">
+            {{ editLoading() ? 'Guardando...' : 'Guardar' }}
+          </button>
+          <button (click)="cancelEdit()"
+            class="px-4 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition-colors">
+            Cancelar
+          </button>
+        </div>
+      </div>
+      }
+
+      }
+    </div>
+    }
+
+  </div>
+
+  <!-- ═══════════ PIPELINE CONTROLS ═══════════ -->
+  <div class="bg-gray-800 rounded-lg p-5 space-y-4">
+
+    <!-- Selected sources summary -->
+    @if (selectedSources().length > 0) {
+    <div class="bg-blue-950 border border-blue-800 rounded px-4 py-2.5 text-sm">
+      <span class="text-blue-300 font-semibold">{{ selectedSources().length }} fuente(s) seleccionada(s): </span>
+      <span class="text-blue-200">{{ selectedSources().map(s => s.name).join(', ') }}</span>
+    </div>
+    } @else {
+    <p class="text-xs text-gray-500 italic">
+      Sin fuentes seleccionadas — se usará la lista del archivo .env al iniciar.
+    </p>
+    }
+
+    <!-- Output mode -->
     <div>
       <label class="block text-sm text-gray-400 mb-1">Modo de salida</label>
       <select [(ngModel)]="outputMode" class="bg-gray-700 text-white rounded px-3 py-2 text-sm focus:outline-none">
@@ -43,10 +210,11 @@
       </select>
     </div>
 
+    <!-- Action buttons -->
     <div class="flex gap-3 flex-wrap">
       <button (click)="start()" [disabled]="loading()"
-        class="px-5 py-2 bg-green-600 text-white rounded hover:bg-green-500 disabled:opacity-50 text-sm">
-        {{ loading() ? 'Iniciando...' : 'Iniciar' }}
+        class="px-5 py-2 bg-green-600 text-white rounded hover:bg-green-500 disabled:opacity-50 text-sm font-semibold">
+        {{ loading() ? 'Iniciando...' : (selectedSources().length > 0 ? 'Iniciar (' + selectedSources().length + ')' : 'Iniciar') }}
       </button>
       <button (click)="stop()" [disabled]="loading()"
         class="px-5 py-2 bg-red-600 text-white rounded hover:bg-red-500 disabled:opacity-50 text-sm">
@@ -60,6 +228,15 @@
         {{ showStream() ? 'Ocultar' : 'Ver' }} stream
       </button>
       }
+      @if (streamConnecting()) {
+      <span class="flex items-center gap-2 text-sm text-yellow-400">
+        <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+        </svg>
+        Esperando video...
+      </span>
+      }
     </div>
 
     @if (message()) {
@@ -71,27 +248,21 @@
   @if (showStream()) {
   <div class="bg-gray-800 rounded-lg overflow-hidden">
 
-    <!-- ── View mode toolbar ── -->
+    <!-- View mode toolbar -->
     <div class="flex items-center justify-between px-4 py-2.5 border-b border-gray-700">
       <div class="flex items-center gap-2">
-        <!-- Mosaic button -->
-        <button (click)="goMosaic()" class="px-3 py-1.5 text-xs font-semibold rounded transition-all" [class]="viewMode() === 'mosaic'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'">
-          🔲 Mosaico
+        <button (click)="goMosaic()" class="px-3 py-1.5 text-xs font-semibold rounded transition-all"
+          [class]="viewMode() === 'mosaic' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'">
+          Mosaico
         </button>
-
-        <!-- Per-camera buttons -->
         @for (i of cameraIndices(); track i) {
-        <button (click)="goSingle(i)" class="px-3 py-1.5 text-xs font-semibold rounded transition-all" [class]="viewMode() === 'single' && selectedCamera() === i
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'">
-          📷 Cam {{ i + 1 }}
+        <button (click)="goSingle(i)" class="px-3 py-1.5 text-xs font-semibold rounded transition-all"
+          [class]="viewMode() === 'single' && selectedCamera() === i ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'">
+          Cam {{ i + 1 }}
         </button>
         }
       </div>
 
-      <!-- Navigation arrows (single mode only) -->
       @if (viewMode() === 'single') {
       <div class="flex items-center gap-2">
         <button (click)="prevCamera()"
@@ -109,21 +280,19 @@
       }
     </div>
 
-    <!-- ── MOSAIC VIEW: grid of individual camera feeds ── -->
+    <!-- Mosaic -->
     @if (viewMode() === 'mosaic') {
     <div class="p-1">
       <div class="grid gap-1" [class]="gridColsClass()">
         @for (i of cameraIndices(); track i) {
         <div class="relative group cursor-pointer overflow-hidden rounded" (click)="goSingle(i)">
-          <img [src]="cameraUrl(i)" alt="Cámara {{ i + 1 }}" class="w-full aspect-video object-cover block" />
-          <!-- Overlay label -->
+          <img [src]="cameraUrl(i)" (error)="onImgError()" alt="Cámara {{ i + 1 }}" class="w-full aspect-video object-cover block" />
           <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-1.5">
             <span class="text-xs font-semibold text-white flex items-center gap-1.5">
               <span class="w-1.5 h-1.5 bg-green-400 rounded-full inline-block"></span>
               Cámara {{ i + 1 }}
             </span>
           </div>
-          <!-- Hover expand icon -->
           <div
             class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-all">
             <span class="text-white text-2xl opacity-0 group-hover:opacity-100 transition-opacity">⛶</span>
@@ -134,19 +303,17 @@
     </div>
     }
 
-    <!-- ── SINGLE CAMERA VIEW: one camera expanded ── -->
+    <!-- Single camera -->
     @if (viewMode() === 'single') {
     <div class="p-1">
-      <img [src]="singleCameraUrl()" alt="Cámara {{ selectedCamera() + 1 }}" class="w-full rounded block" />
+      <img [src]="singleCameraUrl()" (error)="onImgError()" alt="Cámara {{ selectedCamera() + 1 }}" class="w-full rounded block" />
     </div>
     }
 
   </div>
 
-  <!-- Info note -->
-  <p class="text-xs text-gray-500 mt-2">
-    💡 Todas las cámaras siguen siendo analizadas por DeepStream aunque solo veas una.
-    Haz clic en cualquier cámara del mosaico para expandirla.
+  <p class="text-xs text-gray-500 mt-1">
+    Todas las cámaras siguen siendo analizadas por DeepStream aunque solo veas una. Haz clic en cualquier cámara del mosaico para expandirla.
   </p>
   }
 </div>

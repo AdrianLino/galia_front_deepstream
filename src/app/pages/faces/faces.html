@@ -39,10 +39,10 @@
     <div class="bg-gray-800 rounded-lg overflow-hidden flex flex-col">
       <!-- Photo -->
       <div class="aspect-square bg-gray-700 relative overflow-hidden">
-        <img [src]="photoUrl(person.id)" [alt]="person.name" class="w-full h-full object-cover"
-          (error)="$event.target['style'].display='none'" />
-        <div class="absolute inset-0 flex items-center justify-center text-gray-500 text-4xl pointer-events-none">👤
-        </div>
+        <div class="absolute inset-0 flex items-center justify-center text-gray-500 text-4xl">👤</div>
+        <img [src]="photoUrl(person.id)" [alt]="person.name"
+             class="absolute inset-0 w-full h-full object-cover"
+             (error)="$event.target['style'].display='none'" />
       </div>
       <!-- Info + actions -->
       <div class="p-3 flex flex-col gap-2 flex-1">
@@ -83,8 +83,10 @@
   @if (activeTab() === 'register') {
   <div class="max-w-md bg-gray-800 rounded-lg p-6 space-y-4">
     <h2 class="font-semibold">Registrar persona</h2>
-    <p class="text-xs text-gray-400">La foto se guarda en <code>src/people/</code>, embedding en Milvus y metadatos en
-      PostgreSQL.</p>
+    <p class="text-xs text-gray-400">
+      Se detecta el rostro automáticamente — puedes subir una foto de cuerpo completo.
+      La imagen guardada será el recorte del rostro. Solo debe aparecer una persona.
+    </p>
 
     <div>
       <label class="block text-sm text-gray-400 mb-1">Nombre completo</label>

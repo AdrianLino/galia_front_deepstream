@@ -6,6 +6,9 @@ import {
   StreamStartResponse,
   StreamStatusResponse,
   StreamStopResponse,
+  RtspSource,
+  RtspSourceCreate,
+  RtspSourceUpdate,
 } from '../models/stream.model';
 
 const API = 'http://localhost:8000/api/v1';
@@ -26,5 +29,23 @@ export class StreamService {
 
   getStatus(): Observable<StreamStatusResponse> {
     return this.http.get<StreamStatusResponse>(`${API}/stream/status`);
+  }
+
+  // ── RTSP Source management ──────────────────────────────────────────────
+
+  listSources(): Observable<RtspSource[]> {
+    return this.http.get<RtspSource[]>(`${API}/stream/sources`);
+  }
+
+  createSource(body: RtspSourceCreate): Observable<RtspSource> {
+    return this.http.post<RtspSource>(`${API}/stream/sources`, body);
+  }
+
+  updateSource(id: string, body: RtspSourceUpdate): Observable<RtspSource> {
+    return this.http.put<RtspSource>(`${API}/stream/sources/${id}`, body);
+  }
+
+  deleteSource(id: string): Observable<void> {
+    return this.http.delete<void>(`${API}/stream/sources/${id}`);
   }
 }

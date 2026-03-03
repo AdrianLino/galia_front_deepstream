@@ -2,7 +2,11 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StreamService } from '../../core/services/stream.service';
-import { StreamStatusResponse } from '../../core/models/stream.model';
+import {
+  StreamStatusResponse,
+  RtspSource,
+  RtspSourceCreate,
+} from '../../core/models/stream.model';
 
 export type ViewMode = 'mosaic' | 'single';
 
@@ -14,35 +18,61 @@ export type ViewMode = 'mosaic' | 'single';
 export class StreamComponent implements OnInit {
   private streamService = inject(StreamService);
 
+  // ── Pipeline state ────────────────────────────────────────────────────────
   status = signal<StreamStatusResponse | null>(null);
   loading = signal(false);
   message = signal<string | null>(null);
   showStream = signal(false);
-
-  /** Current view mode: 'mosaic' shows all cameras, 'single' shows one expanded */
+  streamConnecting = signal(false);
+  streamRevision = signal(0);
+  /** Sources count from the start() response — drives cameraIndices independently of status() */
+  streamSourcesCount = signal(0);
   viewMode = signal<ViewMode>('mosaic');
-
-  /** Index of the camera being viewed in single mode */
   selectedCamera = signal<number>(0);
-
-  rtspInput = '';
   outputMode: 'mjpeg' | 'rtsp' | 'display' = 'mjpeg';
 
   readonly viewUrl = this.streamService.viewUrl;
 
-  /** URL for the single-camera view */
-  singleCameraUrl = computed(() =>
-    `${this.viewUrl}?camera=${this.selectedCamera()}`
+  private retryTimer?: ReturnType<typeof setTimeout>;
+
+  // ── Saved RTSP sources ────────────────────────────────────────────────────
+  sources = signal<RtspSource[]>([]);
+  sourcesLoading = signal(false);
+  sourcesError = signal<string | null>(null);
+
+  /** IDs of sources currently selected to stream */
+  selectedIds = signal<Set<string>>(new Set());
+
+  // Add-source form
+  showAddForm = signal(false);
+  newName = '';
+  newRtsp = '';
+  newObservation = '';
+  addError = signal<string | null>(null);
+  addLoading = signal(false);
+
+  // Editing
+  editingId = signal<string | null>(null);
+  editName = '';
+  editRtsp = '';
+  editObservation = '';
+  editError = signal<string | null>(null);
+  editLoading = signal(false);
+
+  // ── Computed ──────────────────────────────────────────────────────────────
+  singleCameraUrl = computed(
+    () => `${this.viewUrl}?camera=${this.selectedCamera()}&_t=${this.streamRevision()}`
   );
 
-  /** Array of camera indices [0, 1, 2, ...] from current status */
   cameraIndices = computed(() => {
-    const s = this.status();
-    if (!s || !s.sources_count) return [];
-    return Array.from({ length: s.sources_count }, (_, i) => i);
+    // Use streamSourcesCount (set from start() response) when streaming,
+    // fall back to status when not streaming (e.g. after page reload with pipeline already running).
+    const n = this.showStream()
+      ? this.streamSourcesCount()
+      : (this.status()?.sources_count ?? 0);
+    return Array.from({ length: n }, (_, i) => i);
   });
 
-  /** Grid columns class based on number of cameras */
   gridColsClass = computed(() => {
     const n = this.cameraIndices().length;
     if (n <= 1) return 'grid-cols-1';
@@ -51,17 +81,17 @@ export class StreamComponent implements OnInit {
     return 'grid-cols-4';
   });
 
-  get rtspSources(): string[] {
-    return this.rtspInput
-      .split('\n')
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-  }
+  selectedSources = computed(() =>
+    this.sources().filter((s) => this.selectedIds().has(s.id))
+  );
 
+  // ── Lifecycle ─────────────────────────────────────────────────────────────
   ngOnInit() {
     this.refreshStatus();
+    this.loadSources();
   }
 
+  // ── Pipeline methods ──────────────────────────────────────────────────────
   refreshStatus() {
     this.streamService.getStatus().subscribe({
       next: (s) => this.status.set(s),
@@ -70,11 +100,17 @@ export class StreamComponent implements OnInit {
   }
 
   start() {
+    const selected = this.selectedSources();
+    const rtspSources = selected.length ? selected.map((s) => s.rtsp_url) : undefined;
+
     this.loading.set(true);
     this.message.set(null);
+    this.showStream.set(false);
+    this.streamConnecting.set(false);
+
     this.streamService
       .start({
-        rtsp_sources: this.rtspSources.length ? this.rtspSources : undefined,
+        rtsp_sources: rtspSources,
         config: { output_mode: this.outputMode },
       })
       .subscribe({
@@ -82,7 +118,10 @@ export class StreamComponent implements OnInit {
           this.message.set(res.message);
           this.loading.set(false);
           this.refreshStatus();
-          if (res.success && this.outputMode === 'mjpeg') this.showStream.set(true);
+          if (res.success && this.outputMode === 'mjpeg') {
+            this.streamSourcesCount.set(res.sources_count);
+            this.waitForMjpeg();
+          }
         },
         error: (err) => {
           this.message.set(err?.error?.detail ?? 'Error al iniciar pipeline.');
@@ -91,7 +130,17 @@ export class StreamComponent implements OnInit {
       });
   }
 
+  private waitForMjpeg(): void {
+    this.streamConnecting.set(true);
+    setTimeout(() => {
+      this.streamConnecting.set(false);
+      this.streamRevision.update((v) => v + 1);
+      this.showStream.set(true);
+    }, 1000);
+  }
+
   stop() {
+    this.streamConnecting.set(false);
     this.loading.set(true);
     this.streamService.stop().subscribe({
       next: (res) => {
@@ -109,36 +158,181 @@ export class StreamComponent implements OnInit {
   }
 
   toggleStream() {
+    if (!this.showStream()) {
+      // Ensure cameraIndices is populated from the current status
+      const count = this.status()?.sources_count ?? 0;
+      this.streamSourcesCount.set(count);
+      this.streamRevision.update((v) => v + 1);
+    }
     this.showStream.update((v) => !v);
   }
 
-  /** Switch to mosaic view (all cameras) */
   goMosaic() {
     this.viewMode.set('mosaic');
   }
 
-  /** Switch to single-camera expanded view */
   goSingle(index: number) {
     this.selectedCamera.set(index);
     this.viewMode.set('single');
   }
 
-  /** Navigate to next camera in single mode */
   nextCamera() {
     const total = this.cameraIndices().length;
     if (total === 0) return;
     this.selectedCamera.update((c) => (c + 1) % total);
   }
 
-  /** Navigate to previous camera in single mode */
   prevCamera() {
     const total = this.cameraIndices().length;
     if (total === 0) return;
     this.selectedCamera.update((c) => (c - 1 + total) % total);
   }
 
-  /** Build MJPEG URL for a specific camera index */
+  /** Build MJPEG URL for a specific camera index, reactive to streamRevision */
   cameraUrl(index: number): string {
-    return `${this.viewUrl}?camera=${index}`;
+    const rev = this.streamRevision(); // tracked by Angular template
+    return `${this.viewUrl}?camera=${index}&_t=${rev}`;
+  }
+
+  /**
+   * Called from (error) on any <img>. Waits 1.5 s then increments streamRevision
+   * so all cameras get a fresh src and retry the connection.
+   */
+  onImgError(): void {
+    clearTimeout(this.retryTimer);
+    this.retryTimer = setTimeout(() => {
+      if (this.showStream()) {
+        this.streamRevision.update((v) => v + 1);
+      }
+    }, 1500);
+  }
+
+  // ── RTSP Source management ────────────────────────────────────────────────
+  loadSources() {
+    this.sourcesLoading.set(true);
+    this.sourcesError.set(null);
+    this.streamService.listSources().subscribe({
+      next: (list) => {
+        this.sources.set(list);
+        this.sourcesLoading.set(false);
+      },
+      error: () => {
+        this.sourcesError.set('No se pudieron cargar las fuentes guardadas.');
+        this.sourcesLoading.set(false);
+      },
+    });
+  }
+
+  toggleSelect(id: string) {
+    this.selectedIds.update((set) => {
+      const next = new Set(set);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  isSelected(id: string): boolean {
+    return this.selectedIds().has(id);
+  }
+
+  selectAll() {
+    this.selectedIds.set(new Set(this.sources().map((s) => s.id)));
+  }
+
+  clearSelection() {
+    this.selectedIds.set(new Set());
+  }
+
+  openAddForm() {
+    this.newName = '';
+    this.newRtsp = '';
+    this.newObservation = '';
+    this.addError.set(null);
+    this.showAddForm.set(true);
+  }
+
+  cancelAdd() {
+    this.showAddForm.set(false);
+  }
+
+  saveSource() {
+    if (!this.newName.trim() || !this.newRtsp.trim()) {
+      this.addError.set('Nombre y URL RTSP son obligatorios.');
+      return;
+    }
+    const body: RtspSourceCreate = {
+      name: this.newName.trim(),
+      rtsp_url: this.newRtsp.trim(),
+      observation: this.newObservation.trim() || undefined,
+    };
+    this.addLoading.set(true);
+    this.addError.set(null);
+    this.streamService.createSource(body).subscribe({
+      next: (created) => {
+        this.sources.update((list) => [...list, created].sort((a, b) => a.name.localeCompare(b.name)));
+        this.addLoading.set(false);
+        this.showAddForm.set(false);
+      },
+      error: (err) => {
+        this.addError.set(err?.error?.detail ?? 'Error al guardar la fuente.');
+        this.addLoading.set(false);
+      },
+    });
+  }
+
+  startEdit(source: RtspSource) {
+    this.editingId.set(source.id);
+    this.editName = source.name;
+    this.editRtsp = source.rtsp_url;
+    this.editObservation = source.observation ?? '';
+    this.editError.set(null);
+  }
+
+  cancelEdit() {
+    this.editingId.set(null);
+  }
+
+  saveEdit(id: string) {
+    if (!this.editName.trim() || !this.editRtsp.trim()) {
+      this.editError.set('Nombre y URL RTSP son obligatorios.');
+      return;
+    }
+    this.editLoading.set(true);
+    this.editError.set(null);
+    this.streamService
+      .updateSource(id, {
+        name: this.editName.trim(),
+        rtsp_url: this.editRtsp.trim(),
+        observation: this.editObservation.trim() || undefined,
+      })
+      .subscribe({
+        next: (updated) => {
+          this.sources.update((list) =>
+            list.map((s) => (s.id === id ? updated : s)).sort((a, b) => a.name.localeCompare(b.name))
+          );
+          this.editingId.set(null);
+          this.editLoading.set(false);
+        },
+        error: (err) => {
+          this.editError.set(err?.error?.detail ?? 'Error al actualizar la fuente.');
+          this.editLoading.set(false);
+        },
+      });
+  }
+
+  deleteSource(id: string) {
+    this.streamService.deleteSource(id).subscribe({
+      next: () => {
+        this.sources.update((list) => list.filter((s) => s.id !== id));
+        this.selectedIds.update((set) => {
+          const next = new Set(set);
+          next.delete(id);
+          return next;
+        });
+      },
+      error: (err) => {
+        this.sourcesError.set(err?.error?.detail ?? 'Error al eliminar la fuente.');
+      },
+    });
   }
 }
