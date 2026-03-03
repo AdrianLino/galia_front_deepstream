@@ -1,15 +1,40 @@
-export interface PersonInfo {
+export interface Person {
   id: string;
   name: string;
+  image_path?: string;
   embedding_count: number;
-  created_at?: string;
+  created_at: string;
+  updated_at?: string;
 }
 
-export interface AddPersonResponse {
+export interface PersonsListResponse {
+  total: number;
+  persons: Person[];
+}
+
+export interface RegisterResponse {
   success: boolean;
-  person?: PersonInfo;
-  message?: string;
-  detail?: string;
+  id: string;
+  name: string;
+  image_path?: string;
+  detection_score: number;
+  embedding_dim: number;
+  message: string;
+}
+
+export interface RenameResponse {
+  success: boolean;
+  old_name: string;
+  new_name: string;
+  id: string;
+  image_path?: string;
+}
+
+export interface DeleteResponse {
+  success: boolean;
+  deleted_id: string;
+  name: string;
+  files_removed: number;
 }
 
 export interface BoundingBox {
@@ -19,15 +44,17 @@ export interface BoundingBox {
   y2: number;
 }
 
-export interface FaceDetection {
-  person_info?: PersonInfo;
-  confidence: number;
+export interface FaceResult {
+  identified: boolean;
+  name: string;
+  bbox: BoundingBox;
+  detection_score: number;
   similarity?: number;
-  bounding_box?: number[];
+  reason?: string;
+  closest_match?: { name: string; similarity: number };
 }
 
 export interface IdentifyResponse {
-  success: boolean;
-  detections: FaceDetection[];
-  message?: string;
+  total_faces: number;
+  faces: FaceResult[];
 }
