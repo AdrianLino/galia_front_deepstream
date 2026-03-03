@@ -45,6 +45,12 @@ export class FacesComponent implements OnInit, OnDestroy {
   identifyError = signal<string | null>(null);
   private _previewObjectUrl: string | null = null;
 
+  // Image metadata for bounding boxes
+  imageWidth = signal<number>(0);
+  imageHeight = signal<number>(0);
+  isExpanded = signal<boolean>(false);
+  Math = Math; // To use Math in template
+
   ngOnInit() {
     this.loadPersons();
   }
@@ -149,6 +155,8 @@ export class FacesComponent implements OnInit, OnDestroy {
     this.identifyFile = file;
     this.identifyResult.set(null);
     this.identifyError.set(null);
+    this.imageWidth.set(0);
+    this.imageHeight.set(0);
     this._revokePreview();
     if (file) {
       this._previewObjectUrl = URL.createObjectURL(file);
@@ -156,6 +164,16 @@ export class FacesComponent implements OnInit, OnDestroy {
     } else {
       this.identifyPreviewUrl.set(null);
     }
+  }
+
+  onImageLoad(event: Event) {
+    const img = event.target as HTMLImageElement;
+    this.imageWidth.set(img.naturalWidth);
+    this.imageHeight.set(img.naturalHeight);
+  }
+
+  toggleExpand() {
+    this.isExpanded.update(v => !v);
   }
 
   identify() {

@@ -3,207 +3,286 @@
 
   <!-- Tabs -->
   <div class="flex gap-1 mb-6 border-b border-gray-700">
-    <button (click)="setTab('persons')"
-            class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
-            [class]="activeTab() === 'persons' ? 'border-blue-500 text-blue-400' : 'border-transparent text-gray-400 hover:text-white'">
+    <button (click)="setTab('persons')" class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+      [class]="activeTab() === 'persons' ? 'border-blue-500 text-blue-400' : 'border-transparent text-gray-400 hover:text-white'">
       Personas
     </button>
-    <button (click)="setTab('register')"
-            class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
-            [class]="activeTab() === 'register' ? 'border-blue-500 text-blue-400' : 'border-transparent text-gray-400 hover:text-white'">
+    <button (click)="setTab('register')" class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+      [class]="activeTab() === 'register' ? 'border-blue-500 text-blue-400' : 'border-transparent text-gray-400 hover:text-white'">
       Registrar
     </button>
-    <button (click)="setTab('identify')"
-            class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
-            [class]="activeTab() === 'identify' ? 'border-blue-500 text-blue-400' : 'border-transparent text-gray-400 hover:text-white'">
+    <button (click)="setTab('identify')" class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+      [class]="activeTab() === 'identify' ? 'border-blue-500 text-blue-400' : 'border-transparent text-gray-400 hover:text-white'">
       Identificar
     </button>
   </div>
 
   <!-- ══ TAB: PERSONS ══ -->
   @if (activeTab() === 'persons') {
-    <div class="flex items-center justify-between mb-4">
-      <p class="text-gray-400 text-sm">{{ persons().length }} persona(s) registrada(s)</p>
-      <button (click)="loadPersons()" class="text-xs text-gray-400 hover:text-white px-3 py-1 bg-gray-700 rounded">
-        Actualizar
-      </button>
-    </div>
+  <div class="flex items-center justify-between mb-4">
+    <p class="text-gray-400 text-sm">{{ persons().length }} persona(s) registrada(s)</p>
+    <button (click)="loadPersons()" class="text-xs text-gray-400 hover:text-white px-3 py-1 bg-gray-700 rounded">
+      Actualizar
+    </button>
+  </div>
 
-    @if (listLoading()) { <p class="text-gray-400 text-sm">Cargando...</p> }
+  @if (listLoading()) { <p class="text-gray-400 text-sm">Cargando...</p> }
 
-    @if (!listLoading() && persons().length === 0) {
-      <div class="bg-gray-800 rounded-lg p-8 text-center text-gray-500">
-        No hay personas registradas. Ve a "Registrar" para añadir la primera.
-      </div>
-    }
+  @if (!listLoading() && persons().length === 0) {
+  <div class="bg-gray-800 rounded-lg p-8 text-center text-gray-500">
+    No hay personas registradas. Ve a "Registrar" para añadir la primera.
+  </div>
+  }
 
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-      @for (person of persons(); track person.id) {
-        <div class="bg-gray-800 rounded-lg overflow-hidden flex flex-col">
-          <!-- Photo -->
-          <div class="aspect-square bg-gray-700 relative overflow-hidden">
-            <img [src]="photoUrl(person.id)" [alt]="person.name"
-                 class="w-full h-full object-cover"
-                 (error)="$event.target['style'].display='none'" />
-            <div class="absolute inset-0 flex items-center justify-center text-gray-500 text-4xl pointer-events-none">👤</div>
-          </div>
-          <!-- Info + actions -->
-          <div class="p-3 flex flex-col gap-2 flex-1">
-            @if (editingId() === person.id) {
-              <input [(ngModel)]="editingName" (keyup.enter)="saveEdit(person)" (keyup.escape)="cancelEdit()"
-                     class="w-full bg-gray-700 text-white text-sm rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-              @if (editError()) { <p class="text-red-400 text-xs">{{ editError() }}</p> }
-              <div class="flex gap-1">
-                <button (click)="saveEdit(person)" [disabled]="editLoading()"
-                        class="flex-1 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-500 disabled:opacity-50">
-                  {{ editLoading() ? '...' : 'Guardar' }}
-                </button>
-                <button (click)="cancelEdit()" class="flex-1 py-1 bg-gray-600 text-white rounded text-xs hover:bg-gray-500">
-                  Cancelar
-                </button>
-              </div>
-            } @else {
-              <p class="text-sm font-semibold truncate" [title]="person.name">{{ person.name }}</p>
-              <p class="text-xs text-gray-400">{{ person.embedding_count }} embedding(s)</p>
-              <div class="flex gap-1 mt-auto">
-                <button (click)="startEdit(person)" class="flex-1 py-1 bg-gray-700 text-white rounded text-xs hover:bg-gray-600">
-                  Editar
-                </button>
-                <button (click)="deletePerson(person)" [disabled]="deleteLoading() === person.id"
-                        class="flex-1 py-1 bg-red-700 text-white rounded text-xs hover:bg-red-600 disabled:opacity-50">
-                  {{ deleteLoading() === person.id ? '...' : 'Eliminar' }}
-                </button>
-              </div>
-            }
-          </div>
+  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+    @for (person of persons(); track person.id) {
+    <div class="bg-gray-800 rounded-lg overflow-hidden flex flex-col">
+      <!-- Photo -->
+      <div class="aspect-square bg-gray-700 relative overflow-hidden">
+        <img [src]="photoUrl(person.id)" [alt]="person.name" class="w-full h-full object-cover"
+          (error)="$event.target['style'].display='none'" />
+        <div class="absolute inset-0 flex items-center justify-center text-gray-500 text-4xl pointer-events-none">👤
         </div>
-      }
+      </div>
+      <!-- Info + actions -->
+      <div class="p-3 flex flex-col gap-2 flex-1">
+        @if (editingId() === person.id) {
+        <input [(ngModel)]="editingName" (keyup.enter)="saveEdit(person)" (keyup.escape)="cancelEdit()"
+          class="w-full bg-gray-700 text-white text-sm rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+        @if (editError()) { <p class="text-red-400 text-xs">{{ editError() }}</p> }
+        <div class="flex gap-1">
+          <button (click)="saveEdit(person)" [disabled]="editLoading()"
+            class="flex-1 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-500 disabled:opacity-50">
+            {{ editLoading() ? '...' : 'Guardar' }}
+          </button>
+          <button (click)="cancelEdit()" class="flex-1 py-1 bg-gray-600 text-white rounded text-xs hover:bg-gray-500">
+            Cancelar
+          </button>
+        </div>
+        } @else {
+        <p class="text-sm font-semibold truncate" [title]="person.name">{{ person.name }}</p>
+        <p class="text-xs text-gray-400">{{ person.embedding_count }} embedding(s)</p>
+        <div class="flex gap-1 mt-auto">
+          <button (click)="startEdit(person)"
+            class="flex-1 py-1 bg-gray-700 text-white rounded text-xs hover:bg-gray-600">
+            Editar
+          </button>
+          <button (click)="deletePerson(person)" [disabled]="deleteLoading() === person.id"
+            class="flex-1 py-1 bg-red-700 text-white rounded text-xs hover:bg-red-600 disabled:opacity-50">
+            {{ deleteLoading() === person.id ? '...' : 'Eliminar' }}
+          </button>
+        </div>
+        }
+      </div>
     </div>
+    }
+  </div>
   }
 
   <!-- ══ TAB: REGISTER ══ -->
   @if (activeTab() === 'register') {
-    <div class="max-w-md bg-gray-800 rounded-lg p-6 space-y-4">
-      <h2 class="font-semibold">Registrar persona</h2>
-      <p class="text-xs text-gray-400">La foto se guarda en <code>src/people/</code>, embedding en Milvus y metadatos en PostgreSQL.</p>
+  <div class="max-w-md bg-gray-800 rounded-lg p-6 space-y-4">
+    <h2 class="font-semibold">Registrar persona</h2>
+    <p class="text-xs text-gray-400">La foto se guarda en <code>src/people/</code>, embedding en Milvus y metadatos en
+      PostgreSQL.</p>
 
-      <div>
-        <label class="block text-sm text-gray-400 mb-1">Nombre completo</label>
-        <input type="text" [(ngModel)]="registerName" placeholder="Juan García"
-               class="w-full bg-gray-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
-      </div>
-      <div>
-        <label class="block text-sm text-gray-400 mb-1">Foto (JPEG/PNG, frontal)</label>
-        <input type="file" accept="image/jpeg,image/png" (change)="onRegisterFile($event)"
-               class="w-full text-sm text-gray-300 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-gray-600 file:text-white hover:file:bg-gray-500" />
-      </div>
-      <button (click)="register()" [disabled]="registerLoading() || !registerName.trim() || !registerFile"
-              class="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-500 disabled:opacity-50 text-sm font-medium">
-        {{ registerLoading() ? 'Registrando...' : 'Registrar' }}
-      </button>
-      @if (registerMsg()) { <p class="text-green-400 text-sm">✓ {{ registerMsg() }}</p> }
-      @if (registerError()) { <p class="text-red-400 text-sm">✗ {{ registerError() }}</p> }
+    <div>
+      <label class="block text-sm text-gray-400 mb-1">Nombre completo</label>
+      <input type="text" [(ngModel)]="registerName" placeholder="Juan García"
+        class="w-full bg-gray-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
     </div>
+    <div>
+      <label class="block text-sm text-gray-400 mb-1">Foto (JPEG/PNG, frontal)</label>
+      <input type="file" accept="image/jpeg,image/png" (change)="onRegisterFile($event)"
+        class="w-full text-sm text-gray-300 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-gray-600 file:text-white hover:file:bg-gray-500" />
+    </div>
+    <button (click)="register()" [disabled]="registerLoading() || !registerName.trim() || !registerFile"
+      class="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-500 disabled:opacity-50 text-sm font-medium">
+      {{ registerLoading() ? 'Registrando...' : 'Registrar' }}
+    </button>
+    @if (registerMsg()) { <p class="text-green-400 text-sm">✓ {{ registerMsg() }}</p> }
+    @if (registerError()) { <p class="text-red-400 text-sm">✗ {{ registerError() }}</p> }
+  </div>
   }
 
   <!-- ══ TAB: IDENTIFY ══ -->
   @if (activeTab() === 'identify') {
-    <div class="space-y-6">
+  <div class="space-y-6">
 
-      <!-- Input row -->
-      <div class="bg-gray-800 rounded-lg p-5 flex flex-wrap items-end gap-4">
-        <div class="flex-1 min-w-48">
-          <label class="block text-sm text-gray-400 mb-1">Imagen con rostro(s)</label>
-          <input type="file" accept="image/jpeg,image/png" (change)="onIdentifyFile($event)"
-                 class="w-full text-sm text-gray-300 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-gray-600 file:text-white hover:file:bg-gray-500" />
-        </div>
-        <button (click)="identify()" [disabled]="identifyLoading() || !identifyFile"
-                class="px-6 py-2 bg-purple-600 text-white rounded hover:bg-purple-500 disabled:opacity-50 text-sm font-medium">
-          {{ identifyLoading() ? 'Identificando...' : 'Identificar' }}
-        </button>
-        @if (identifyError()) { <p class="text-red-400 text-sm w-full">{{ identifyError() }}</p> }
+    <!-- Input row -->
+    <div class="bg-gray-800 rounded-lg p-5 flex flex-wrap items-end gap-4">
+      <div class="flex-1 min-w-48">
+        <label class="block text-sm text-gray-400 mb-1">Imagen con rostro(s)</label>
+        <input type="file" accept="image/jpeg,image/png" (change)="onIdentifyFile($event)"
+          class="w-full text-sm text-gray-300 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-gray-600 file:text-white hover:file:bg-gray-500" />
       </div>
+      <button (click)="identify()" [disabled]="identifyLoading() || !identifyFile"
+        class="px-6 py-2 bg-purple-600 text-white rounded hover:bg-purple-500 disabled:opacity-50 text-sm font-medium">
+        {{ identifyLoading() ? 'Identificando...' : 'Identificar' }}
+      </button>
+      @if (identifyError()) { <p class="text-red-400 text-sm w-full">{{ identifyError() }}</p> }
+    </div>
 
-      <!-- Results -->
-      @if (identifyPreviewUrl() || identifyResult()) {
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Results -->
+    @if (identifyPreviewUrl() || identifyResult()) {
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-          <!-- Uploaded image preview -->
-          @if (identifyPreviewUrl()) {
-            <div class="bg-gray-800 rounded-lg overflow-hidden">
-              <p class="text-xs text-gray-400 px-4 pt-3 pb-2 border-b border-gray-700">Imagen consultada</p>
-              <div class="p-3">
-                <img [src]="identifyPreviewUrl()" alt="Imagen consultada"
-                     class="w-full rounded object-contain max-h-80" />
-                @if (identifyResult()) {
-                  <p class="text-xs text-gray-400 mt-2 text-center">
-                    {{ identifyResult()!.total_faces }} rostro(s) detectado(s)
-                  </p>
-                }
-              </div>
-            </div>
+      <!-- Uploaded image preview -->
+      @if (identifyPreviewUrl()) {
+      <div class="bg-gray-800 rounded-lg overflow-hidden">
+        <p class="text-xs text-gray-400 px-4 pt-3 pb-2 border-b border-gray-700">Imagen consultada</p>
+        <div class="p-3">
+          <div class="relative inline-block w-full h-full text-center">
+            <img [src]="identifyPreviewUrl()" alt="Imagen consultada"
+              class="w-full rounded object-contain mx-auto max-h-80 cursor-zoom-in" (click)="toggleExpand()"
+              (load)="onImageLoad($event)" />
+            @if (identifyResult() && imageWidth() > 0 && imageHeight() > 0) {
+            <svg class="absolute inset-0 w-full h-full pointer-events-none mx-auto"
+              [attr.viewBox]="'0 0 ' + Math.round(imageWidth()) + ' ' + Math.round(imageHeight())"
+              preserveAspectRatio="xMidYMid meet">
+              @for (face of identifyResult()!.faces; track $index) {
+              <!-- Stroke outline for the name text for better readability -->
+              <text [attr.x]="face.bbox.x1"
+                [attr.y]="Math.max(face.bbox.y1 - Math.round(imageHeight() * 0.015), Math.round(imageHeight() * 0.03))"
+                [attr.font-size]="Math.max(16, Math.round(imageHeight() * 0.035))" font-weight="bold"
+                font-family="sans-serif" fill="black" stroke="black"
+                [attr.stroke-width]="Math.max(2, Math.round(imageHeight() * 0.007))">
+                {{ face.identified ? face.name : (face.closest_match ? face.closest_match.name + ' (?)' : 'Desconocido')
+                }}
+              </text>
+              <text [attr.x]="face.bbox.x1"
+                [attr.y]="Math.max(face.bbox.y1 - Math.round(imageHeight() * 0.015), Math.round(imageHeight() * 0.03))"
+                [attr.font-size]="Math.max(16, Math.round(imageHeight() * 0.035))" font-weight="bold"
+                font-family="sans-serif"
+                [attr.fill]="face.identified ? '#4ade80' : (face.closest_match ? '#f97316' : '#ef4444')">
+                {{ face.identified ? face.name : (face.closest_match ? face.closest_match.name + ' (?)' : 'Desconocido')
+                }}
+              </text>
+              <!-- Face bounding box -->
+              <rect [attr.x]="face.bbox.x1" [attr.y]="face.bbox.y1" [attr.width]="face.bbox.x2 - face.bbox.x1"
+                [attr.height]="face.bbox.y2 - face.bbox.y1" fill="none"
+                [attr.stroke]="face.identified ? '#4ade80' : (face.closest_match ? '#f97316' : '#ef4444')"
+                [attr.stroke-width]="Math.max(2, Math.round(imageHeight() * 0.006))" />
+              }
+            </svg>
+            }
+          </div>
+          @if (identifyResult()) {
+          <p class="text-xs text-gray-400 mt-2 text-center">
+            {{ identifyResult()!.total_faces }} rostro(s) detectado(s) <span class="text-gray-500">(Clic en la foto para
+              agrandar)</span>
+          </p>
           }
-
-          <!-- Matched persons -->
-          @if (identifyResult(); as r) {
-            <div class="bg-gray-800 rounded-lg overflow-hidden">
-              <p class="text-xs text-gray-400 px-4 pt-3 pb-2 border-b border-gray-700">Resultados</p>
-              <div class="p-4 space-y-4">
-                @for (face of r.faces; track $index) {
-                  <div class="flex gap-4 items-start">
-
-                    <!-- DB photo of matched person -->
-                    <div class="shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-gray-700 relative">
-                      @if (face.identified && matchedPerson(face.name); as p) {
-                        <img [src]="photoUrl(p.id)" [alt]="p.name"
-                             class="w-full h-full object-cover"
-                             (error)="$event.target['style'].display='none'" />
-                      }
-                      <div class="absolute inset-0 flex items-center justify-center text-3xl pointer-events-none">
-                        {{ face.identified ? '' : '❓' }}
-                      </div>
-                    </div>
-
-                    <!-- Face details -->
-                    <div class="flex-1 text-sm">
-                      <div class="flex items-center gap-2 mb-1">
-                        <span class="font-semibold text-base"
-                              [class]="face.identified ? 'text-green-400' : 'text-gray-300'">
-                          {{ face.identified ? face.name : 'Desconocido' }}
-                        </span>
-                        <span class="text-xs px-2 py-0.5 rounded-full"
-                              [class]="face.identified ? 'bg-green-900 text-green-300' : 'bg-gray-700 text-gray-400'">
-                          {{ face.identified ? 'identificado' : 'no identificado' }}
-                        </span>
-                      </div>
-
-                      <div class="text-gray-400 text-xs space-y-0.5">
-                        <p>Score detección: <span class="text-white">{{ face.detection_score | number:'1.2-2' }}</span></p>
-                        @if (face.similarity !== undefined) {
-                          <p>Similitud: <span class="text-white">{{ face.similarity | number:'1.3-3' }}</span></p>
-                        }
-                        @if (face.closest_match) {
-                          <p>Candidato más cercano:
-                            <span class="text-yellow-400">{{ face.closest_match.name }}</span>
-                            ({{ face.closest_match.similarity | number:'1.3-3' }})
-                          </p>
-                        }
-                        @if (face.reason) {
-                          <p class="text-yellow-600">{{ face.reason }}</p>
-                        }
-                      </div>
-                    </div>
-
-                  </div>
-                }
-              </div>
-            </div>
-          }
-
         </div>
+      </div>
+      }
+
+      <!-- Matched persons -->
+      @if (identifyResult(); as r) {
+      <div class="bg-gray-800 rounded-lg overflow-hidden">
+        <p class="text-xs text-gray-400 px-4 pt-3 pb-2 border-b border-gray-700">Resultados</p>
+        <div class="p-4 space-y-4">
+          @for (face of r.faces; track $index) {
+          <div class="flex gap-4 items-start">
+
+            <!-- DB photo of matched person -->
+            <div class="shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-gray-700 relative">
+              @if (face.identified && matchedPerson(face.name); as p) {
+              <img [src]="photoUrl(p.id)" [alt]="p.name" class="w-full h-full object-cover"
+                (error)="$event.target['style'].display='none'" />
+              }
+              <div class="absolute inset-0 flex items-center justify-center text-3xl pointer-events-none">
+                {{ face.identified ? '' : '❓' }}
+              </div>
+            </div>
+
+            <!-- Face details -->
+            <div class="flex-1 text-sm">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-semibold text-base"
+                  [class]="face.identified ? 'text-green-400' : (face.closest_match ? 'text-orange-400' : 'text-gray-300')">
+                  {{ face.identified ? face.name : (face.closest_match ? face.closest_match.name + ' (?)' :
+                  'Desconocido') }}
+                </span>
+                <span class="text-xs px-2 py-0.5 rounded-full"
+                  [class]="face.identified ? 'bg-green-900 text-green-300' : (face.closest_match ? 'bg-orange-900 text-orange-300' : 'bg-gray-700 text-gray-400')">
+                  {{ face.identified ? 'identificado' : (face.closest_match ? 'candidato posible' : 'no identificado')
+                  }}
+                </span>
+              </div>
+
+              <div class="text-gray-400 text-xs space-y-0.5">
+                <p>Score detección: <span class="text-white">{{ face.detection_score | number:'1.2-2' }}</span></p>
+                @if (face.similarity !== undefined) {
+                <p>Similitud: <span class="text-white">{{ face.similarity | number:'1.3-3' }}</span></p>
+                }
+                @if (face.closest_match) {
+                <p>Candidato más cercano:
+                  <span class="text-yellow-400">{{ face.closest_match.name }}</span>
+                  ({{ face.closest_match.similarity | number:'1.3-3' }})
+                </p>
+                }
+                @if (face.reason) {
+                <p class="text-yellow-600">{{ face.reason }}</p>
+                }
+              </div>
+            </div>
+
+          </div>
+          }
+        </div>
+      </div>
       }
 
     </div>
+    }
+
+  </div>
+  }
+
+  <!-- ══ FULLSCREEN MODAL ══ -->
+  @if (isExpanded() && identifyPreviewUrl()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-2 sm:p-6" (click)="toggleExpand()">
+    <!-- Close button overlay -->
+    <button
+      class="absolute top-4 right-4 z-[60] bg-gray-800/60 text-white hover:bg-red-500 hover:text-white w-10 h-10 rounded-full flex items-center justify-center text-2xl font-bold transition-colors cursor-pointer shadow-lg"
+      title="Cerrar (Click afuera)" (click)="toggleExpand()" (click)="$event.stopPropagation()">
+      ×
+    </button>
+
+    <!-- Image container (takes max width/height without growing out) -->
+    <div class="relative flex w-full h-full my-auto" (click)="$event.stopPropagation()">
+      <!-- The image limits itself (object-contain implies intrinsic ratio preserved) -->
+      <img [src]="identifyPreviewUrl()" alt="Imagen ampliada"
+        class="relative m-auto max-w-full max-h-full object-contain shadow-2xl rounded" />
+
+      <!-- Overlay SVG using the same bounding box as the image limits -->
+      @if (identifyResult() && imageWidth() > 0 && imageHeight() > 0) {
+      <svg class="absolute inset-0 pointer-events-none w-full h-full m-auto"
+        [attr.viewBox]="'0 0 ' + Math.round(imageWidth()) + ' ' + Math.round(imageHeight())"
+        preserveAspectRatio="xMidYMid meet">
+        @for (face of identifyResult()!.faces; track $index) {
+        <text [attr.x]="face.bbox.x1"
+          [attr.y]="Math.max(face.bbox.y1 - Math.round(imageHeight() * 0.015), Math.round(imageHeight() * 0.03))"
+          [attr.font-size]="Math.max(16, Math.round(imageHeight() * 0.035))" font-weight="bold" font-family="sans-serif"
+          fill="black" stroke="black" [attr.stroke-width]="Math.max(2, Math.round(imageHeight() * 0.007))">
+          {{ face.identified ? face.name : (face.closest_match ? face.closest_match.name + ' (?)' : 'Desconocido') }}
+        </text>
+        <text [attr.x]="face.bbox.x1"
+          [attr.y]="Math.max(face.bbox.y1 - Math.round(imageHeight() * 0.015), Math.round(imageHeight() * 0.03))"
+          [attr.font-size]="Math.max(16, Math.round(imageHeight() * 0.035))" font-weight="bold" font-family="sans-serif"
+          [attr.fill]="face.identified ? '#4ade80' : (face.closest_match ? '#f97316' : '#ef4444')">
+          {{ face.identified ? face.name : (face.closest_match ? face.closest_match.name + ' (?)' : 'Desconocido') }}
+        </text>
+        <rect [attr.x]="face.bbox.x1" [attr.y]="face.bbox.y1" [attr.width]="face.bbox.x2 - face.bbox.x1"
+          [attr.height]="face.bbox.y2 - face.bbox.y1" fill="none"
+          [attr.stroke]="face.identified ? '#4ade80' : (face.closest_match ? '#f97316' : '#ef4444')"
+          [attr.stroke-width]="Math.max(2, Math.round(imageHeight() * 0.006))" />
+        }
+      </svg>
+      }
+    </div>
+  </div>
   }
 
 </div>
