@@ -1,0 +1,125 @@
+<div class="p-6">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold">Dashboard</h1>
+    <div class="flex gap-3">
+      <button (click)="refresh()"
+              class="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 text-sm">
+        Actualizar
+      </button>
+      <button (click)="syncMilvus()"
+              class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500 text-sm">
+        Sync Milvus
+      </button>
+    </div>
+  </div>
+
+  @if (syncMsg()) {
+    <p class="mb-4 text-sm text-blue-400">{{ syncMsg() }}</p>
+  }
+
+  @if (loading()) {
+    <p class="text-gray-400">Cargando...</p>
+  }
+
+  @if (error()) {
+    <p class="text-red-400">{{ error() }}</p>
+  }
+
+  @if (health(); as h) {
+    <!-- Overall status badge -->
+    <div class="mb-4">
+      <span class="text-sm px-3 py-1 rounded-full font-semibold"
+            [class]="h.status === 'ok' ? 'bg-green-900 text-green-300' : 'bg-yellow-900 text-yellow-300'">
+        Sistema: {{ h.status }}
+      </span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+      <!-- Pipeline -->
+      <div class="bg-gray-800 rounded-lg p-5">
+        <h2 class="text-lg font-semibold mb-3">Pipeline</h2>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-400">Estado</span>
+            <span [class]="h.components.pipeline.status === 'running' ? 'text-green-400' : 'text-yellow-400'">
+              {{ h.components.pipeline.status }}
+            </span>
+          </div>
+          @if (h.components.pipeline.active_tracks !== undefined) {
+            <div class="flex justify-between">
+              <span class="text-gray-400">Tracks activos</span>
+              <span>{{ h.components.pipeline.active_tracks }}</span>
+            </div>
+          }
+          @if (h.components.pipeline.recognition_queue_depth !== undefined) {
+            <div class="flex justify-between">
+              <span class="text-gray-400">Cola reconocimiento</span>
+              <span>{{ h.components.pipeline.recognition_queue_depth }}</span>
+            </div>
+          }
+          @if (h.components.pipeline.detail) {
+            <p class="text-red-400 text-xs mt-1">{{ h.components.pipeline.detail }}</p>
+          }
+        </div>
+      </div>
+
+      <!-- Milvus -->
+      <div class="bg-gray-800 rounded-lg p-5">
+        <h2 class="text-lg font-semibold mb-3">Milvus</h2>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-400">Estado</span>
+            <span [class]="h.components.milvus.status === 'connected' ? 'text-green-400' : 'text-red-400'">
+              {{ h.components.milvus.status }}
+            </span>
+          </div>
+          @if (h.components.milvus.collection) {
+            <div class="flex justify-between">
+              <span class="text-gray-400">Colección</span>
+              <span class="truncate ml-2">{{ h.components.milvus.collection }}</span>
+            </div>
+          }
+          @if (h.components.milvus.entities !== undefined) {
+            <div class="flex justify-between">
+              <span class="text-gray-400">Entidades</span>
+              <span>{{ h.components.milvus.entities }}</span>
+            </div>
+          }
+          @if (h.components.milvus.detail) {
+            <p class="text-red-400 text-xs mt-1">{{ h.components.milvus.detail }}</p>
+          }
+        </div>
+      </div>
+
+      <!-- Face DB -->
+      <div class="bg-gray-800 rounded-lg p-5">
+        <h2 class="text-lg font-semibold mb-3">Face Database</h2>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-400">Estado</span>
+            <span [class]="h.components.face_db.status === 'ok' ? 'text-green-400' : 'text-red-400'">
+              {{ h.components.face_db.status }}
+            </span>
+          </div>
+          @if (h.components.face_db.persons !== undefined) {
+            <div class="flex justify-between">
+              <span class="text-gray-400">Personas</span>
+              <span>{{ h.components.face_db.persons }}</span>
+            </div>
+          }
+          @if (h.components.face_db.total_embeddings !== undefined) {
+            <div class="flex justify-between">
+              <span class="text-gray-400">Embeddings</span>
+              <span>{{ h.components.face_db.total_embeddings }}</span>
+            </div>
+          }
+          @if (h.components.face_db.detail) {
+            <p class="text-red-400 text-xs mt-1">{{ h.components.face_db.detail }}</p>
+          }
+        </div>
+      </div>
+
+    </div>
+  }
+</div>

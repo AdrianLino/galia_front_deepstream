@@ -1,0 +1,80 @@
+<div class="p-6">
+  <h1 class="text-2xl font-bold mb-6">NVR Scanner</h1>
+
+  <div class="bg-gray-800 rounded-lg p-5 mb-6 space-y-4">
+    <p class="text-sm text-gray-400">
+      Deja los campos vacíos para usar la configuración del <code>.env</code>.
+    </p>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">IP</label>
+        <input type="text" [(ngModel)]="ip" placeholder="192.168.1.x"
+               class="w-full bg-gray-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">Puerto</label>
+        <input type="number" [(ngModel)]="port" placeholder="80"
+               class="w-full bg-gray-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">Usuario</label>
+        <input type="text" [(ngModel)]="username"
+               class="w-full bg-gray-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">Contraseña</label>
+        <input type="password" [(ngModel)]="password"
+               class="w-full bg-gray-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+      </div>
+    </div>
+
+    <button (click)="scan()" [disabled]="loading()"
+            class="px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-500 disabled:opacity-50 text-sm">
+      {{ loading() ? 'Escaneando...' : 'Escanear' }}
+    </button>
+
+    @if (error()) {
+      <p class="text-red-400 text-sm">{{ error() }}</p>
+    }
+  </div>
+
+  @if (result(); as r) {
+    <div class="bg-gray-800 rounded-lg p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold">
+          {{ r.cameras.length }} cámara(s) encontrada(s)
+        </h2>
+        @if (r.cameras.length > 0) {
+          <button (click)="copyRtspList(r.cameras)"
+                  class="text-xs px-3 py-1 bg-gray-700 rounded hover:bg-gray-600">
+            Copiar URLs
+          </button>
+        }
+      </div>
+
+      @if (r.cameras.length === 0) {
+        <p class="text-yellow-400 text-sm">No se encontraron cámaras activas.</p>
+      } @else {
+        <div class="space-y-2">
+          @for (cam of r.cameras; track cam.channel_id) {
+            <div class="bg-gray-700 rounded p-3 text-sm">
+              <div class="flex items-center justify-between">
+                <span class="font-semibold">Canal {{ cam.channel_id }}</span>
+                <span [class]="cam.status === 'active' ? 'text-green-400' : 'text-gray-400'"
+                      class="text-xs">{{ cam.status }}</span>
+              </div>
+              @if (cam.name) {
+                <p class="text-gray-300 text-xs mt-1">{{ cam.name }}</p>
+              }
+              <p class="text-gray-400 text-xs font-mono mt-1 truncate">{{ cam.rtsp_url }}</p>
+              @if (cam.location) {
+                <p class="text-gray-500 text-xs">{{ cam.location }}</p>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

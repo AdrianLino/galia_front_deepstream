@@ -1,20 +1,11 @@
-import { Component, inject, signal } from '@angular/core';
-import { Router, RouterOutlet } from '@angular/router';
-import { FirstComponent } from './pages/first-component/first-component';
+import { Component } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+import { NavComponent } from './shared/nav/nav.component';
+
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, FirstComponent],
+  imports: [RouterOutlet, NavComponent],
   templateUrl: './app.html',
-  styleUrl: './app.css'
+  styleUrl: './app.css',
 })
-export class App {
-  protected readonly title = signal('galia_front');
-
-  router = inject(Router);
-
-
-  goToFirstComponent() {
-    this.router.navigate(['first']);
-  }
-  
-}
+export class App {}

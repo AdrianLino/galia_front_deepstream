@@ -1,15 +1,22 @@
 import { Routes } from '@angular/router';
-import { FirstComponent } from './pages/first-component/first-component';
+
 export const routes: Routes = [
-
-
-    {
-        path: 'first',
-        component: FirstComponent,
-    },
-    {
-        path: 'hola',
-        loadComponent: () => import('./pages/hola/hola').then((m) => m.Hola),
-        
-    },
+  { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+  {
+    path: 'dashboard',
+    loadComponent: () => import('./pages/dashboard/dashboard').then((m) => m.DashboardComponent),
+  },
+  {
+    path: 'stream',
+    loadComponent: () => import('./pages/stream/stream').then((m) => m.StreamComponent),
+  },
+  {
+    path: 'faces',
+    loadComponent: () => import('./pages/faces/faces').then((m) => m.FacesComponent),
+  },
+  {
+    path: 'nvr',
+    loadComponent: () => import('./pages/nvr/nvr').then((m) => m.NvrComponent),
+  },
+  { path: '**', redirectTo: 'dashboard' },
 ];

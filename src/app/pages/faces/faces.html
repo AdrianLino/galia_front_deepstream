@@ -1,0 +1,81 @@
+<div class="p-6">
+  <h1 class="text-2xl font-bold mb-6">Faces</h1>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+    <!-- Register -->
+    <div class="bg-gray-800 rounded-lg p-5 space-y-4">
+      <h2 class="text-lg font-semibold">Registrar persona</h2>
+
+      <div>
+        <label class="block text-sm text-gray-400 mb-1">Nombre</label>
+        <input type="text" [(ngModel)]="registerName" placeholder="Juan García"
+               class="w-full bg-gray-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+      </div>
+
+      <div>
+        <label class="block text-sm text-gray-400 mb-1">Imagen</label>
+        <input type="file" accept="image/*" (change)="onRegisterFile($event)"
+               class="w-full text-sm text-gray-300 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-gray-600 file:text-white hover:file:bg-gray-500" />
+      </div>
+
+      <button (click)="register()" [disabled]="registerLoading() || !registerName || !registerFile"
+              class="px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-500 disabled:opacity-50 text-sm">
+        {{ registerLoading() ? 'Registrando...' : 'Registrar' }}
+      </button>
+
+      @if (registerResult(); as r) {
+        <div [class]="r.success ? 'text-green-400' : 'text-red-400'" class="text-sm mt-2">
+          @if (r.success && r.person) {
+            <p>Persona registrada: <strong>{{ r.person.name }}</strong></p>
+            <p class="text-gray-400 text-xs">ID: {{ r.person.id }}</p>
+            <p class="text-gray-400 text-xs">Embeddings: {{ r.person.embedding_count }}</p>
+          } @else {
+            <p>{{ r.detail ?? r.message ?? 'Error desconocido.' }}</p>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Identify -->
+    <div class="bg-gray-800 rounded-lg p-5 space-y-4">
+      <h2 class="text-lg font-semibold">Identificar rostro</h2>
+
+      <div>
+        <label class="block text-sm text-gray-400 mb-1">Imagen</label>
+        <input type="file" accept="image/*" (change)="onIdentifyFile($event)"
+               class="w-full text-sm text-gray-300 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-gray-600 file:text-white hover:file:bg-gray-500" />
+      </div>
+
+      <button (click)="identify()" [disabled]="identifyLoading() || !identifyFile"
+              class="px-5 py-2 bg-purple-600 text-white rounded hover:bg-purple-500 disabled:opacity-50 text-sm">
+        {{ identifyLoading() ? 'Identificando...' : 'Identificar' }}
+      </button>
+
+      @if (identifyResult(); as r) {
+        @if (!r.success) {
+          <p class="text-red-400 text-sm">{{ r.message }}</p>
+        } @else if (r.detections.length === 0) {
+          <p class="text-yellow-400 text-sm">No se detectaron rostros.</p>
+        } @else {
+          <div class="space-y-2 mt-2">
+            @for (det of r.detections; track $index) {
+              <div class="bg-gray-700 rounded p-3 text-sm">
+                <p class="font-semibold">
+                  {{ det.person_info?.name ?? 'Desconocido' }}
+                </p>
+                <p class="text-gray-400 text-xs">
+                  Confianza: {{ det.confidence | number:'1.2-2' }}
+                  @if (det.similarity !== undefined) {
+                    · Similitud: {{ det.similarity | number:'1.2-2' }}
+                  }
+                </p>
+              </div>
+            }
+          </div>
+        }
+      }
+    </div>
+
+  </div>
+</div>
