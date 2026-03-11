@@ -46,6 +46,7 @@ export interface RtspSource {
   name: string;
   rtsp_url: string;
   observation?: string;
+  group_name?: string;
   created_at: string;
   updated_at: string;
 }
@@ -54,10 +55,12 @@ export interface RtspSourceCreate {
   name: string;
   rtsp_url: string;
   observation?: string;
+  group_name?: string;
 }
 
 export interface RtspSourceUpdate {
   name?: string;
   rtsp_url?: string;
   observation?: string;
+  group_name?: string;
 }

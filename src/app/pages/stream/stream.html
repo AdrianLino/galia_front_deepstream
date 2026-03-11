@@ -97,6 +97,11 @@
           <input [(ngModel)]="newObservation" type="text" placeholder="Opcional..."
             class="w-full bg-gray-700 text-white rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
         </div>
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">Grupo</label>
+          <input [(ngModel)]="newGroupName" type="text" placeholder="Ej: Valhalla > Barricas"
+            class="w-full bg-gray-700 text-white rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+        </div>
       </div>
       @if (addError()) {
       <p class="text-xs text-red-400">{{ addError() }}</p>
@@ -124,111 +129,190 @@
       No hay fuentes guardadas. Agrega una con el botón de arriba.
     </div>
     } @else {
-    <div class="divide-y divide-gray-700">
-      @for (src of pagedSources(); track src.id) {
 
-      <!-- Normal row -->
-      @if (editingId() !== src.id) {
-      <div class="flex items-start gap-3 px-5 py-3 hover:bg-gray-750 transition-colors group"
-        [class.bg-blue-950]="isSelected(src.id)">
+      <!-- ── Flat search results (when searching) ── -->
+      @if (searchQuery()) {
+      <div class="divide-y divide-gray-700">
+        @for (src of pagedSources(); track src.id) {
+        @if (editingId() !== src.id) {
+        <div class="flex items-start gap-3 px-5 py-3 hover:bg-gray-750 transition-colors group"
+          [class.bg-blue-950]="isSelected(src.id)">
+          <div class="pt-0.5">
+            <input type="checkbox" [checked]="isSelected(src.id)" (change)="toggleSelect(src.id)"
+              class="w-4 h-4 accent-blue-500 cursor-pointer" />
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-semibold text-sm text-white truncate">{{ src.name }}</span>
+              @if (src.group_name) {
+              <span class="text-xs bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded">{{ src.group_name }}</span>
+              }
+            </div>
+            <p class="text-xs font-mono text-gray-400 truncate mt-0.5">{{ src.rtsp_url }}</p>
+          </div>
+          <div class="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button (click)="startEdit(src)" class="px-2.5 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded text-xs">Editar</button>
+            <button (click)="deleteSource(src.id)" class="px-2.5 py-1 bg-red-900 hover:bg-red-800 text-red-300 rounded text-xs">Eliminar</button>
+          </div>
+        </div>
+        }
+        @if (editingId() === src.id) {
+        <div class="px-5 py-4 bg-gray-750 space-y-3">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Nombre</label>
+              <input [(ngModel)]="editName" type="text" class="w-full bg-gray-700 text-white rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">URL RTSP</label>
+              <input [(ngModel)]="editRtsp" type="text" class="w-full bg-gray-700 text-white rounded px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Observación</label>
+              <input [(ngModel)]="editObservation" type="text" class="w-full bg-gray-700 text-white rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Grupo</label>
+              <input [(ngModel)]="editGroupName" type="text" class="w-full bg-gray-700 text-white rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+            </div>
+          </div>
+          @if (editError()) {
+          <p class="text-xs text-red-400">{{ editError() }}</p>
+          }
+          <div class="flex gap-2">
+            <button (click)="saveEdit(src.id)" [disabled]="editLoading()"
+              class="px-4 py-1.5 bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white rounded text-sm font-semibold">
+              {{ editLoading() ? 'Guardando...' : 'Guardar' }}
+            </button>
+            <button (click)="cancelEdit()" class="px-4 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">Cancelar</button>
+          </div>
+        </div>
+        }
+        }
+      </div>
+      @if (totalPages() > 1) {
+      <div class="flex items-center justify-between px-5 py-2.5 border-t border-gray-700 text-xs text-gray-400">
+        <span>{{ filteredSources().length }} resultado(s)</span>
+        <div class="flex items-center gap-1">
+          <button (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1"
+            class="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-30">‹</button>
+          @for (p of pageNumbers(); track p) {
+          <button (click)="goToPage(p)" class="px-2.5 py-1 rounded"
+            [class]="p === currentPage() ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'">{{ p }}</button>
+          }
+          <button (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() === totalPages()"
+            class="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-30">›</button>
+        </div>
+      </div>
+      }
+      }
 
-        <!-- Checkbox -->
-        <div class="pt-0.5">
-          <input type="checkbox" [checked]="isSelected(src.id)" (change)="toggleSelect(src.id)"
-            class="w-4 h-4 accent-blue-500 cursor-pointer" />
+      <!-- ── Grouped accordion (default view) ── -->
+      @if (!searchQuery()) {
+      @for (group of groupedSources(); track group.name) {
+      <div class="border-b border-gray-700 last:border-b-0">
+
+        <!-- Group header -->
+        <div class="flex items-center gap-3 px-4 py-2.5 bg-gray-850 hover:bg-gray-800 cursor-pointer select-none"
+          (click)="toggleGroup(group.name)">
+
+          <!-- Chevron -->
+          <svg class="w-3.5 h-3.5 text-gray-400 transition-transform flex-shrink-0"
+            [class.rotate-90]="!isGroupCollapsed(group.name)"
+            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+
+          <!-- Group checkbox (stop propagation so it doesn't toggle collapse) -->
+          <input type="checkbox"
+            [checked]="isGroupSelectionFull(group.cameras)"
+            (change)="selectGroup(group.cameras)"
+            (click)="$event.stopPropagation()"
+            class="w-3.5 h-3.5 accent-blue-500 cursor-pointer flex-shrink-0" />
+
+          <!-- Group name -->
+          <span class="font-semibold text-sm text-gray-100 flex-1 truncate">{{ group.name }}</span>
+
+          <!-- Camera count badge -->
+          <span class="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded-full flex-shrink-0">
+            {{ group.cameras.length }} cámara{{ group.cameras.length !== 1 ? 's' : '' }}
+          </span>
         </div>
 
-        <!-- Info -->
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-2">
-            <span class="font-semibold text-sm text-white truncate">{{ src.name }}</span>
-            @if (isSelected(src.id)) {
-            <span class="text-xs bg-blue-600 text-white px-1.5 py-0.5 rounded">seleccionada</span>
-            }
+        <!-- Cameras inside this group -->
+        @if (!isGroupCollapsed(group.name)) {
+        <div class="divide-y divide-gray-750">
+          @for (src of group.cameras; track src.id) {
+
+          <!-- Normal row -->
+          @if (editingId() !== src.id) {
+          <div class="flex items-start gap-3 pl-10 pr-5 py-2.5 hover:bg-gray-800 transition-colors group"
+            [class.bg-blue-950]="isSelected(src.id)">
+            <div class="pt-0.5">
+              <input type="checkbox" [checked]="isSelected(src.id)" (change)="toggleSelect(src.id)"
+                class="w-4 h-4 accent-blue-500 cursor-pointer" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-sm text-white truncate">{{ src.name }}</span>
+                @if (isSelected(src.id)) {
+                <span class="text-xs bg-blue-600 text-white px-1.5 py-0.5 rounded">sel.</span>
+                }
+              </div>
+              <p class="text-xs font-mono text-gray-400 truncate mt-0.5">{{ src.rtsp_url }}</p>
+              @if (src.observation) {
+              <p class="text-xs text-gray-500 mt-0.5">{{ src.observation }}</p>
+              }
+            </div>
+            <div class="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button (click)="startEdit(src)" class="px-2.5 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded text-xs">Editar</button>
+              <button (click)="deleteSource(src.id)" class="px-2.5 py-1 bg-red-900 hover:bg-red-800 text-red-300 rounded text-xs">Eliminar</button>
+            </div>
           </div>
-          <p class="text-xs font-mono text-gray-400 truncate mt-0.5">{{ src.rtsp_url }}</p>
-          @if (src.observation) {
-          <p class="text-xs text-gray-500 mt-0.5">{{ src.observation }}</p>
+          }
+
+          <!-- Editing inline -->
+          @if (editingId() === src.id) {
+          <div class="pl-10 pr-5 py-4 bg-gray-850 space-y-3">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs text-gray-400 mb-1">Nombre</label>
+                <input [(ngModel)]="editName" type="text" class="w-full bg-gray-700 text-white rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label class="block text-xs text-gray-400 mb-1">URL RTSP</label>
+                <input [(ngModel)]="editRtsp" type="text" class="w-full bg-gray-700 text-white rounded px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label class="block text-xs text-gray-400 mb-1">Observación</label>
+                <input [(ngModel)]="editObservation" type="text" class="w-full bg-gray-700 text-white rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label class="block text-xs text-gray-400 mb-1">Grupo</label>
+                <input [(ngModel)]="editGroupName" type="text" class="w-full bg-gray-700 text-white rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+              </div>
+            </div>
+            @if (editError()) {
+            <p class="text-xs text-red-400">{{ editError() }}</p>
+            }
+            <div class="flex gap-2">
+              <button (click)="saveEdit(src.id)" [disabled]="editLoading()"
+                class="px-4 py-1.5 bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white rounded text-sm font-semibold">
+                {{ editLoading() ? 'Guardando...' : 'Guardar' }}
+              </button>
+              <button (click)="cancelEdit()" class="px-4 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">Cancelar</button>
+            </div>
+          </div>
+          }
+
           }
         </div>
-
-        <!-- Actions -->
-        <div class="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button (click)="startEdit(src)"
-            class="px-2.5 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded text-xs transition-colors">
-            Editar
-          </button>
-          <button (click)="deleteSource(src.id)"
-            class="px-2.5 py-1 bg-red-900 hover:bg-red-800 text-red-300 rounded text-xs transition-colors">
-            Eliminar
-          </button>
-        </div>
-      </div>
-      }
-
-      <!-- Editing row -->
-      @if (editingId() === src.id) {
-      <div class="px-5 py-4 bg-gray-750 space-y-3">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">Nombre</label>
-            <input [(ngModel)]="editName" type="text"
-              class="w-full bg-gray-700 text-white rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">URL RTSP</label>
-            <input [(ngModel)]="editRtsp" type="text"
-              class="w-full bg-gray-700 text-white rounded px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-blue-500" />
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">Observación</label>
-            <input [(ngModel)]="editObservation" type="text"
-              class="w-full bg-gray-700 text-white rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
-          </div>
-        </div>
-        @if (editError()) {
-        <p class="text-xs text-red-400">{{ editError() }}</p>
-        }
-        <div class="flex gap-2">
-          <button (click)="saveEdit(src.id)" [disabled]="editLoading()"
-            class="px-4 py-1.5 bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white rounded text-sm font-semibold transition-colors">
-            {{ editLoading() ? 'Guardando...' : 'Guardar' }}
-          </button>
-          <button (click)="cancelEdit()"
-            class="px-4 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition-colors">
-            Cancelar
-          </button>
-        </div>
-      </div>
-      }
-
-      }
-    </div>
-
-    <!-- Pagination -->
-    @if (totalPages() > 1) {
-    <div class="flex items-center justify-between px-5 py-2.5 border-t border-gray-700 text-xs text-gray-400">
-      <span>
-        Página {{ currentPage() }} de {{ totalPages() }}
-        &nbsp;·&nbsp; {{ filteredSources().length }} fuente(s)
-      </span>
-      <div class="flex items-center gap-1">
-        <button (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1"
-          class="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-30 transition-colors">‹</button>
-
-        @for (p of pageNumbers(); track p) {
-        <button (click)="goToPage(p)"
-          class="px-2.5 py-1 rounded transition-colors"
-          [class]="p === currentPage() ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'">
-          {{ p }}
-        </button>
         }
 
-        <button (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() === totalPages()"
-          class="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-30 transition-colors">›</button>
       </div>
-    </div>
-    }
+      }
+      }
+
     }
 
   </div>

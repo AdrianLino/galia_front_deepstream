@@ -55,7 +55,8 @@ export class StreamComponent implements OnInit {
       (s) =>
         s.name.toLowerCase().includes(q) ||
         s.rtsp_url.toLowerCase().includes(q) ||
-        (s.observation ?? '').toLowerCase().includes(q)
+        (s.observation ?? '').toLowerCase().includes(q) ||
+        (s.group_name ?? '').toLowerCase().includes(q)
     );
   });
 
@@ -73,11 +74,22 @@ export class StreamComponent implements OnInit {
     Array.from({ length: this.totalPages() }, (_, i) => i + 1)
   );
 
+  groupedSources = computed(() => {
+    const map = new Map<string, RtspSource[]>();
+    for (const src of this.filteredSources()) {
+      const key = src.group_name?.trim() || 'Sin grupo';
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(src);
+    }
+    return Array.from(map.entries()).map(([name, cameras]) => ({ name, cameras }));
+  });
+
   // Add-source form
   showAddForm = signal(false);
   newName = '';
   newRtsp = '';
   newObservation = '';
+  newGroupName = '';
   addError = signal<string | null>(null);
   addLoading = signal(false);
 
@@ -86,8 +98,12 @@ export class StreamComponent implements OnInit {
   editName = '';
   editRtsp = '';
   editObservation = '';
+  editGroupName = '';
   editError = signal<string | null>(null);
   editLoading = signal(false);
+
+  // Groups
+  collapsedGroups = signal<Set<string>>(new Set());
 
   // ── Computed ──────────────────────────────────────────────────────────────
 
@@ -271,10 +287,42 @@ export class StreamComponent implements OnInit {
     this.selectedIds.set(new Set());
   }
 
+  // ── Group methods ─────────────────────────────────────────────────────────
+  toggleGroup(name: string) {
+    this.collapsedGroups.update((set) => {
+      const next = new Set(set);
+      next.has(name) ? next.delete(name) : next.add(name);
+      return next;
+    });
+  }
+
+  isGroupCollapsed(name: string): boolean {
+    return this.collapsedGroups().has(name);
+  }
+
+  selectGroup(cameras: RtspSource[]) {
+    this.selectedIds.update((set) => {
+      const next = new Set(set);
+      const ids = cameras.map((c) => c.id);
+      const allSelected = ids.every((id) => next.has(id));
+      if (allSelected) {
+        ids.forEach((id) => next.delete(id));
+      } else {
+        ids.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  }
+
+  isGroupSelectionFull(cameras: RtspSource[]): boolean {
+    return cameras.length > 0 && cameras.every((c) => this.selectedIds().has(c.id));
+  }
+
   openAddForm() {
     this.newName = '';
     this.newRtsp = '';
     this.newObservation = '';
+    this.newGroupName = '';
     this.addError.set(null);
     this.showAddForm.set(true);
   }
@@ -292,6 +340,7 @@ export class StreamComponent implements OnInit {
       name: this.newName.trim(),
       rtsp_url: this.newRtsp.trim(),
       observation: this.newObservation.trim() || undefined,
+      group_name: this.newGroupName.trim() || undefined,
     };
     this.addLoading.set(true);
     this.addError.set(null);
@@ -314,6 +363,7 @@ export class StreamComponent implements OnInit {
     this.editName = source.name;
     this.editRtsp = source.rtsp_url;
     this.editObservation = source.observation ?? '';
+    this.editGroupName = source.group_name ?? '';
     this.editError.set(null);
   }
 
@@ -333,6 +383,7 @@ export class StreamComponent implements OnInit {
         name: this.editName.trim(),
         rtsp_url: this.editRtsp.trim(),
         observation: this.editObservation.trim() || undefined,
+        group_name: this.editGroupName.trim() || undefined,
       })
       .subscribe({
         next: (updated) => {
