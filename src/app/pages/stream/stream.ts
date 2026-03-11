@@ -14,6 +14,12 @@ export type ViewMode = 'mosaic' | 'single';
   selector: 'app-stream',
   imports: [CommonModule, FormsModule],
   templateUrl: './stream.html',
+  styles: [`
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+  `]
 })
 export class StreamComponent implements OnInit {
   private streamService = inject(StreamService);
@@ -45,7 +51,7 @@ export class StreamComponent implements OnInit {
 
   // Search & pagination
   searchQuery = signal('');
-  readonly pageSize = 8;
+  readonly pageSize = 20;
   currentPage = signal(1);
 
   filteredSources = computed(() => {
@@ -76,7 +82,8 @@ export class StreamComponent implements OnInit {
 
   groupedSources = computed(() => {
     const map = new Map<string, RtspSource[]>();
-    for (const src of this.filteredSources()) {
+    // Group the paginated sources, not the entire filtered list, to avoid massive DOM rendering
+    for (const src of this.pagedSources()) {
       const key = src.group_name?.trim() || 'Sin grupo';
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(src);

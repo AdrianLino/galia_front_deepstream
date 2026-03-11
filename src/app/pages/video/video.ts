@@ -14,6 +14,12 @@ import {
   selector: 'app-video',
   imports: [CommonModule, FormsModule],
   templateUrl: './video.html',
+  styles: [`
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+  `]
 })
 export class VideoComponent implements OnInit, OnDestroy {
   private videoService = inject(VideoService);

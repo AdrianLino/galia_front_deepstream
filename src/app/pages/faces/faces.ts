@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FacesService } from '../../core/services/faces.service';
@@ -10,6 +10,12 @@ type Tab = 'persons' | 'register' | 'identify';
   selector: 'app-faces',
   imports: [CommonModule, FormsModule],
   templateUrl: './faces.html',
+  styles: [`
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+  `]
 })
 export class FacesComponent implements OnInit, OnDestroy {
   private svc = inject(FacesService);
@@ -20,6 +26,40 @@ export class FacesComponent implements OnInit, OnDestroy {
   persons = signal<Person[]>([]);
   listLoading = signal(false);
   private personsByName = new Map<string, Person>();
+
+  // Pagination for persons
+  searchQuery = signal('');
+  readonly pageSize = 18; // 3 rows of 6 cols
+  currentPage = signal(1);
+
+  filteredPersons = computed(() => {
+    const q = this.searchQuery().toLowerCase().trim();
+    if (!q) return this.persons();
+    return this.persons().filter((p) => p.name.toLowerCase().includes(q));
+  });
+
+  totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.filteredPersons().length / this.pageSize))
+  );
+
+  pagedPersons = computed(() => {
+    const page = Math.min(this.currentPage(), this.totalPages());
+    const start = (page - 1) * this.pageSize;
+    return this.filteredPersons().slice(start, start + this.pageSize);
+  });
+
+  pageNumbers = computed(() =>
+    Array.from({ length: this.totalPages() }, (_, i) => i + 1)
+  );
+
+  onSearchChange(value: string) {
+    this.searchQuery.set(value);
+    this.currentPage.set(1);
+  }
+
+  goToPage(page: number) {
+    this.currentPage.set(page);
+  }
 
   // Edit (rename)
   editingId = signal<string | null>(null);
