@@ -11,7 +11,7 @@ import {
   RtspSourceUpdate,
 } from '../models/stream.model';
 
-const API = 'http://localhost:8000/api/v1';
+const API = 'http://172.16.83.111:8000/api/v1';
 
 @Injectable({ providedIn: 'root' })
 export class StreamService {

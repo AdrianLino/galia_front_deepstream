@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { NVRScanRequest, NVRScanResponse } from '../models/nvr.model';
 
-const API = 'http://localhost:8000/api/v1';
+const API = 'http://172.16.83.111:8000/api/v1';
 
 @Injectable({ providedIn: 'root' })
 export class NvrService {
