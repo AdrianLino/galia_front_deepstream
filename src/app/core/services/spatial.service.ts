@@ -40,8 +40,9 @@ export class SpatialService {
     return this.http.delete<void>(`${API}/spatial/nodes/${nodeId}`);
   }
 
-  listNodeCameras(nodeId: string): Observable<RtspSource[]> {
-    return this.http.get<RtspSource[]>(`${API}/spatial/nodes/${nodeId}/cameras`);
+  listNodeCameras(nodeId: string, recursive = false): Observable<RtspSource[]> {
+    const params = recursive ? '?recursive=true' : '';
+    return this.http.get<RtspSource[]>(`${API}/spatial/nodes/${nodeId}/cameras${params}`);
   }
 
   assignCamera(nodeId: string, sourceId: string): Observable<RtspSource> {

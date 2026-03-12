@@ -1,5 +1,5 @@
 <!-- ═══════════════════════════════════ GEOCERCAS PAGE ═══════════════════════════════════ -->
-<div class="flex flex-col h-[calc(100vh-4rem)] bg-gray-900 text-white">
+<div class="relative flex flex-col h-[calc(100vh-4rem)] bg-gray-900 text-white">
 
   <!-- ── Top bar: Breadcrumb + Actions ────────────────────────────────────────────── -->
   <div class="flex items-center justify-between px-4 py-3 bg-gray-800/60 border-b border-gray-700/50">
@@ -316,9 +316,10 @@
 
           <!-- Child nodes -->
           @for (node of nodes(); track node.id) {
-            <div class="px-4 py-3 border-b border-gray-700/30 hover:bg-gray-700/20 transition-colors cursor-pointer group"
-                 (click)="selectNode(node)">
-              <div class="flex items-center justify-between">
+            <div class="border-b border-gray-700/30">
+              <!-- Node card header -->
+              <div class="px-4 py-3 hover:bg-gray-700/20 transition-colors cursor-pointer group flex items-center justify-between gap-2"
+                   (click)="selectNode(node)">
                 <div class="flex items-center gap-2.5 min-w-0">
                   <span class="text-lg">{{ tipoIcon(node.tipo) }}</span>
                   <div class="min-w-0">
@@ -329,25 +330,85 @@
                     </p>
                   </div>
                 </div>
-                <div class="flex items-center gap-3 shrink-0">
+                <div class="flex items-center gap-1.5 shrink-0">
                   @if (node.children_count > 0) {
                     <span class="text-[10px] text-gray-500 bg-gray-700/50 px-1.5 py-0.5 rounded">
                       {{ node.children_count }} sub
                     </span>
                   }
-                  @if (node.cameras_count > 0) {
-                    <span class="text-[10px] text-blue-400 bg-blue-600/10 px-1.5 py-0.5 rounded">
-                      {{ node.cameras_count }} 📹
-                    </span>
-                  }
+                  <!-- Camera expand toggle — always visible, prominent -->
+                  <button (click)="toggleNodeExpand(node, $event)"
+                          [title]="expandedNodeId() === node.id ? 'Cerrar cámaras' : 'Ver / agregar cámaras'"
+                          class="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium border transition-colors"
+                          [class]="expandedNodeId() === node.id
+                            ? 'bg-blue-600/30 border-blue-500/50 text-blue-300'
+                            : 'bg-gray-700/40 border-gray-600/50 text-gray-300 hover:bg-emerald-600/20 hover:border-emerald-500/50 hover:text-emerald-300'">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 10l4.553-2.069A1 1 0 0121 8.882v6.235a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+                    </svg>
+                    <span>{{ node.cameras_count > 0 ? node.cameras_count + ' cám.' : 'Cámaras' }}</span>
+                  </button>
+                  <!-- Navigate into node -->
                   <button (click)="navigateToNode(node); $event.stopPropagation()"
-                          class="text-gray-600 hover:text-white opacity-0 group-hover:opacity-100 transition-all">
+                          title="Entrar al nodo"
+                          class="p-1 text-gray-600 hover:text-white opacity-0 group-hover:opacity-100 transition-all rounded hover:bg-gray-700/50">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                   </button>
                 </div>
               </div>
-              @if (node.descripcion) {
-                <p class="text-[10px] text-gray-500 mt-1 ml-8 truncate">{{ node.descripcion }}</p>
+              @if (node.descripcion && expandedNodeId() !== node.id) {
+                <p class="text-[10px] text-gray-500 pb-1.5 ml-[52px] pr-4 truncate -mt-1">{{ node.descripcion }}</p>
+              }
+
+              <!-- Inline camera panel (expanded) -->
+              @if (expandedNodeId() === node.id) {
+                <div class="mx-3 mb-3 bg-gray-900/60 border border-gray-700/50 rounded-xl overflow-hidden">
+                  <!-- Panel header -->
+                  <div class="flex items-center justify-between px-3 py-2 border-b border-gray-700/40">
+                    <span class="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
+                      📹 Cámaras asignadas a {{ node.name }}
+                    </span>
+                    <button (click)="openAssignCamera(node); $event.stopPropagation()"
+                            class="flex items-center gap-1 px-2 py-0.5 text-[10px] rounded-md bg-emerald-600/20 text-emerald-400 border border-emerald-600/30 hover:bg-emerald-600/30 transition-colors">
+                      <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                      Agregar
+                    </button>
+                  </div>
+
+                  <!-- Camera list -->
+                  @let nodeCams = nodeCamerasCache()[node.id];
+                  @if (!nodeCams) {
+                    <div class="py-3 flex justify-center">
+                      <div class="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  } @else if (nodeCams.length === 0) {
+                    <div class="py-3 text-center text-[10px] text-gray-600">
+                      Sin cámaras asignadas —
+                      <button (click)="openAssignCamera(node); $event.stopPropagation()"
+                              class="text-blue-400 hover:text-blue-300 underline">
+                        agregar una
+                      </button>
+                    </div>
+                  } @else {
+                    @for (cam of nodeCams; track cam.id) {
+                      <div class="flex items-center justify-between px-3 py-2 border-b border-gray-700/30 last:border-0 group/cam hover:bg-gray-800/50 transition-colors">
+                        <div class="flex items-center gap-2 min-w-0">
+                          <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></div>
+                          <div class="min-w-0">
+                            <p class="text-xs text-white truncate">{{ cam.name }}</p>
+                            <p class="text-[9px] text-gray-600 truncate">{{ cam.rtsp_url }}</p>
+                          </div>
+                        </div>
+                        <button (click)="unassignCameraFromNode(node, cam, $event)"
+                                title="Desasignar"
+                                class="ml-2 shrink-0 p-1 rounded text-gray-600 hover:text-red-400 hover:bg-red-600/10 opacity-0 group-hover/cam:opacity-100 transition-all">
+                          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                      </div>
+                    }
+                  }
+                </div>
               }
             </div>
           }
@@ -361,41 +422,348 @@
           }
         </div>
       }
-
-      <!-- ── Camera assignment modal ──────────────────────────────────────────── -->
-      @if (showAssignCamera()) {
-        <div class="absolute inset-0 bg-gray-900/70 z-[2000] flex items-center justify-center backdrop-blur-sm"
-             (click)="showAssignCamera.set(false)">
-          <div class="bg-gray-800 border border-gray-700 rounded-xl w-[340px] max-h-[60vh] flex flex-col shadow-2xl"
-               (click)="$event.stopPropagation()">
-            <div class="px-4 py-3 border-b border-gray-700/50 flex items-center justify-between">
-              <h4 class="text-sm font-bold text-white">
-                Asignar cámara a {{ selectedNodeForCamera()?.name }}
-              </h4>
-              <button (click)="showAssignCamera.set(false)" class="text-gray-500 hover:text-white">✕</button>
-            </div>
-            <div class="overflow-y-auto custom-scrollbar flex-1">
-              @for (cam of unassignedCameras(); track cam.id) {
-                <button (click)="assignCameraToNode(cam)"
-                        class="w-full text-left px-4 py-2.5 border-b border-gray-700/30 hover:bg-gray-700/30 transition-colors group">
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <p class="text-sm text-white">{{ cam.name }}</p>
-                      <p class="text-[10px] text-gray-500 truncate">{{ cam.rtsp_url }}</p>
-                    </div>
-                    <span class="text-xs text-emerald-400 opacity-0 group-hover:opacity-100 transition-all">+ Asignar</span>
-                  </div>
-                </button>
-              }
-              @if (unassignedCameras().length === 0) {
-                <div class="py-8 text-center text-gray-500 text-xs">
-                  Todas las cámaras ya están asignadas
-                </div>
-              }
-            </div>
-          </div>
-        </div>
-      }
     </div>
   </div>
+
+  <!-- ── Camera modal (Create / Assign) — floating panel, bottom-left ──── -->
+  @if (showAssignCamera()) {
+
+    <!-- Picking mode: floating banner centered at bottom of full screen -->
+    @if (minimizedForPick()) {
+      <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-[3000] flex items-center gap-3 px-5 py-3 bg-gray-900/95 border border-amber-500/60 rounded-2xl shadow-2xl backdrop-blur-sm">
+        <div class="w-3 h-3 rounded-full bg-amber-400 animate-ping"></div>
+        <span class="text-sm text-amber-300 font-medium">Haz clic en el mapa para ubicar la cámara</span>
+        <button (click)="cancelPickingCamCoords()"
+                class="ml-2 text-gray-500 hover:text-white text-xs underline">
+          Cancelar
+        </button>
+      </div>
+    } @else {
+
+      <!-- Floating panel — bottom-left, no backdrop -->
+      <div class="absolute bottom-3 left-3 z-[2000] w-[370px] max-h-[65vh] bg-gray-800/95 border border-gray-600/60 rounded-2xl shadow-2xl backdrop-blur-md flex flex-col overflow-hidden"
+           style="animation: slideUp .2s ease-out">
+
+        <!-- Modal header -->
+        <div class="px-3 pt-3 pb-2 border-b border-gray-700/50 shrink-0">
+          <div class="flex items-center justify-between mb-2">
+            <div class="min-w-0">
+              <h4 class="text-xs font-bold text-white">📹 Cámara → {{ selectedNodeForCamera()?.name }}</h4>
+            </div>
+            <button (click)="closeAssignCamera()" class="text-gray-500 hover:text-white p-0.5">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <!-- Tabs -->
+          <div class="flex gap-1 bg-gray-900/50 p-0.5 rounded-lg">
+            <button (click)="cameraModalTab.set('create')"
+                    class="flex-1 py-1 text-[11px] font-medium rounded-md transition-colors"
+                    [class]="cameraModalTab() === 'create'
+                      ? 'bg-blue-600 text-white shadow'
+                      : 'text-gray-400 hover:text-white'">
+              ➕ Nueva
+            </button>
+            <button (click)="cameraModalTab.set('assign')"
+                    class="flex-1 py-1 text-[11px] font-medium rounded-md transition-colors"
+                    [class]="cameraModalTab() === 'assign'
+                      ? 'bg-blue-600 text-white shadow'
+                      : 'text-gray-400 hover:text-white'">
+              🔗 Existente
+            </button>
+          </div>
+        </div>
+
+        <!-- ── Tab: Nueva cámara ──────────────────────────────────────────── -->
+        @if (cameraModalTab() === 'create') {
+          <div class="overflow-y-auto custom-scrollbar flex-1 p-3">
+            <div class="space-y-2.5">
+
+              <!-- Nombre + Grupo -->
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-[10px] text-gray-500 mb-0.5 block">Nombre *</label>
+                  <input [(ngModel)]="newCamName" placeholder="Cámara Entrada"
+                         class="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                  <label class="text-[10px] text-gray-500 mb-0.5 block">Grupo</label>
+                  <input [(ngModel)]="newCamGroup" placeholder="Accesos..."
+                         class="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500">
+                </div>
+              </div>
+
+              <!-- URL RTSP -->
+              <div>
+                <label class="text-[10px] text-gray-500 mb-0.5 block">URL RTSP *</label>
+                <input [(ngModel)]="newCamRtsp" placeholder="rtsp://..."
+                       class="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 font-mono">
+              </div>
+
+              <!-- Observación -->
+              <div>
+                <label class="text-[10px] text-gray-500 mb-0.5 block">Observación</label>
+                <input [(ngModel)]="newCamObs" placeholder="Nota opcional..."
+                       class="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500">
+              </div>
+
+              <!-- Ubicación -->
+              <div>
+                @if (newCamLat !== null && newCamLng !== null) {
+                  <div class="flex items-center gap-2 px-2.5 py-1.5 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                    <span class="text-[10px]">📍</span>
+                    <span class="text-[10px] text-blue-300 font-mono flex-1">{{ newCamLat }}, {{ newCamLng }}</span>
+                    <button (click)="startPickingCamCoords()" class="text-[10px] text-gray-400 hover:text-white underline shrink-0">Cambiar</button>
+                  </div>
+                } @else {
+                  <button (click)="startPickingCamCoords()"
+                          class="w-full flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg border border-dashed border-gray-600 text-gray-400 hover:border-blue-500/60 hover:text-blue-300 transition-colors text-xs">
+                    📍 Tocar punto en el mapa
+                  </button>
+                }
+              </div>
+
+              <!-- Orientación (colapsable) -->
+              <div class="border border-gray-700/50 rounded-lg overflow-hidden">
+                <button type="button" (click)="showOrientationFields.set(!showOrientationFields())"
+                        class="w-full flex items-center justify-between px-2.5 py-2 bg-gray-700/30 hover:bg-gray-700/50 transition-colors">
+                  <span class="text-[10px] font-semibold text-gray-300">📐 Orientación</span>
+                  <svg class="w-3.5 h-3.5 text-gray-500 transition-transform" [class.rotate-180]="showOrientationFields()"
+                       fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </button>
+                @if (showOrientationFields()) {
+                  <div class="p-2.5 space-y-2">
+                    <div class="grid grid-cols-3 gap-1.5">
+                      <div>
+                        <label class="text-[9px] text-gray-500 mb-0.5 block">Azimuth°</label>
+                        <input [(ngModel)]="newCamAzimuth" type="number" min="0" max="360" placeholder="0–360"
+                               class="w-full bg-gray-700/50 border border-gray-600 rounded px-2 py-1 text-[11px] text-white placeholder-gray-600 focus:outline-none focus:border-blue-500">
+                      </div>
+                      <div>
+                        <label class="text-[9px] text-gray-500 mb-0.5 block">Inclinación°</label>
+                        <input [(ngModel)]="newCamInclinacion" type="number" min="-90" max="90" placeholder="-90…90"
+                               class="w-full bg-gray-700/50 border border-gray-600 rounded px-2 py-1 text-[11px] text-white placeholder-gray-600 focus:outline-none focus:border-blue-500">
+                      </div>
+                      <div>
+                        <label class="text-[9px] text-gray-500 mb-0.5 block">FOV°</label>
+                        <input [(ngModel)]="newCamFov" type="number" min="0" max="360" placeholder="90"
+                               class="w-full bg-gray-700/50 border border-gray-600 rounded px-2 py-1 text-[11px] text-white placeholder-gray-600 focus:outline-none focus:border-blue-500">
+                      </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-1.5">
+                      <div>
+                        <label class="text-[9px] text-gray-500 mb-0.5 block">Piso</label>
+                        <input [(ngModel)]="newCamPiso" type="number" placeholder="0 = PB"
+                               class="w-full bg-gray-700/50 border border-gray-600 rounded px-2 py-1 text-[11px] text-white placeholder-gray-600 focus:outline-none focus:border-blue-500">
+                      </div>
+                      <div>
+                        <label class="text-[9px] text-gray-500 mb-0.5 block">Altura (m)</label>
+                        <input [(ngModel)]="newCamAltura" type="number" step="0.1" placeholder="2.5"
+                               class="w-full bg-gray-700/50 border border-gray-600 rounded px-2 py-1 text-[11px] text-white placeholder-gray-600 focus:outline-none focus:border-blue-500">
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+
+              <!-- Guardar -->
+              <button (click)="createCameraForNode()"
+                      [disabled]="!newCamName.trim() || !newCamRtsp.trim() || savingCamera()"
+                      class="w-full px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-xs font-semibold transition-colors flex items-center justify-center gap-1.5">
+                @if (savingCamera()) {
+                  <div class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Creando...
+                } @else {
+                  ✓ Crear y asignar
+                }
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- ── Tab: Asignar existente ──────────────────────────────────────── -->
+        @if (cameraModalTab() === 'assign') {
+          <div class="overflow-y-auto custom-scrollbar flex-1">
+            @for (cam of unassignedCameras(); track cam.id) {
+              <button (click)="assignCameraToNode(cam)"
+                      class="w-full text-left px-3 py-2 border-b border-gray-700/30 hover:bg-gray-700/30 transition-colors group">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="min-w-0">
+                    <p class="text-xs text-white font-medium truncate">{{ cam.name }}</p>
+                    <p class="text-[9px] text-gray-500 truncate font-mono">{{ cam.rtsp_url }}</p>
+                  </div>
+                  <span class="text-[10px] text-emerald-400 opacity-0 group-hover:opacity-100 transition-all shrink-0">+ Asignar</span>
+                </div>
+              </button>
+            }
+            @if (unassignedCameras().length === 0) {
+              <div class="py-6 text-center text-gray-500 text-[10px]">
+                <p>Todas asignadas</p>
+                <button (click)="cameraModalTab.set('create')" class="mt-1 text-blue-400 hover:text-blue-300 underline">Crear nueva</button>
+              </div>
+            }
+          </div>
+        }
+
+      </div>
+    } <!-- end @else minimizedForPick -->
+  } <!-- end @if showAssignCamera -->
+
+  <!-- ═══════════════ Edit Camera — floating panel, bottom-left ═══════════ -->
+  @if (showEditCamera()) {
+
+    <!-- Pick-coords mode: floating banner -->
+    @if (minimizedForEditPick()) {
+      <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-[3000] flex items-center gap-3 px-5 py-3 bg-gray-900/95 border border-blue-500/60 rounded-2xl shadow-2xl backdrop-blur-sm">
+        <div class="w-3 h-3 rounded-full bg-blue-400 animate-ping"></div>
+        <span class="text-sm text-blue-300 font-medium">Haz clic en el mapa para reubicar la cámara</span>
+        <button (click)="cancelPickingEditCoords()" class="ml-2 text-gray-500 hover:text-white text-xs underline">Cancelar</button>
+      </div>
+    } @else {
+
+      <!-- Floating panel — bottom-left -->
+      <div class="absolute bottom-3 left-3 z-[2000] w-[370px] max-h-[70vh] bg-gray-800/95 border border-amber-500/40 rounded-2xl shadow-2xl backdrop-blur-md flex flex-col overflow-hidden"
+           style="animation: slideUp .2s ease-out">
+
+        <!-- Header -->
+        <div class="px-3 pt-3 pb-2 border-b border-gray-700/50 shrink-0">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold text-white flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+              ✏️ {{ editingCamera()?.name }}
+            </h4>
+            <button (click)="closeEditCamera()" class="text-gray-500 hover:text-white p-0.5">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Body -->
+        <div class="overflow-y-auto custom-scrollbar flex-1 p-3">
+          <div class="space-y-2.5">
+
+            <!-- Name + Group -->
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="text-[10px] text-gray-500 mb-0.5 block">Nombre *</label>
+                <input [(ngModel)]="editCamName"
+                       class="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500">
+              </div>
+              <div>
+                <label class="text-[10px] text-gray-500 mb-0.5 block">Grupo</label>
+                <input [(ngModel)]="editCamGroup"
+                       class="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500">
+              </div>
+            </div>
+
+            <!-- RTSP URL -->
+            <div>
+              <label class="text-[10px] text-gray-500 mb-0.5 block">URL RTSP *</label>
+              <input [(ngModel)]="editCamRtsp"
+                     class="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 font-mono">
+            </div>
+
+            <!-- Observation -->
+            <div>
+              <label class="text-[10px] text-gray-500 mb-0.5 block">Observación</label>
+              <input [(ngModel)]="editCamObs"
+                     class="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500">
+            </div>
+
+            <!-- Location -->
+            <div>
+              @if (editCamLat !== null && editCamLng !== null) {
+                <div class="flex items-center gap-2 px-2.5 py-1.5 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                  <span class="text-[10px]">📍</span>
+                  <span class="text-[10px] text-blue-300 font-mono flex-1">{{ editCamLat }}, {{ editCamLng }}</span>
+                  <button (click)="startPickingEditCoords()" class="text-[10px] text-gray-400 hover:text-white underline shrink-0">Cambiar</button>
+                </div>
+              } @else {
+                <button (click)="startPickingEditCoords()"
+                        class="w-full flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg border border-dashed border-gray-600 text-gray-400 hover:border-blue-500/60 hover:text-blue-300 transition-colors text-xs">
+                  📍 Seleccionar ubicación
+                </button>
+              }
+            </div>
+
+            <!-- ═══ ORIENTATION — VISUAL CONTROLS ═══ -->
+            <div class="border border-amber-500/30 rounded-xl overflow-hidden bg-gray-900/40">
+              <div class="px-3 py-2 bg-amber-500/10 border-b border-amber-500/20">
+                <span class="text-[10px] font-bold text-amber-300 flex items-center gap-1.5">
+                  🎯 Campo de visión — arrastra el punto ● o usa los sliders
+                </span>
+              </div>
+              <div class="p-3 space-y-3">
+
+                <!-- Azimuth slider -->
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <label class="text-[10px] text-gray-300 font-medium">Dirección</label>
+                    <span class="text-[10px] font-mono text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded">{{ editCamAzimuth ?? '—' }}°</span>
+                  </div>
+                  <input type="range" min="0" max="360" step="1"
+                         [ngModel]="editCamAzimuth ?? 0"
+                         (ngModelChange)="editCamAzimuth = $event; onEditOrientationChange()"
+                         class="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-amber-500">
+                  <div class="flex justify-between text-[8px] text-gray-600 mt-0.5">
+                    <span>N 0°</span><span>E 90°</span><span>S 180°</span><span>W 270°</span><span>360°</span>
+                  </div>
+                </div>
+
+                <!-- FOV slider -->
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <label class="text-[10px] text-gray-300 font-medium">Apertura FOV</label>
+                    <span class="text-[10px] font-mono text-red-300 bg-red-500/10 px-1.5 py-0.5 rounded">{{ editCamFov ?? 90 }}°</span>
+                  </div>
+                  <input type="range" min="10" max="360" step="1"
+                         [ngModel]="editCamFov ?? 90"
+                         (ngModelChange)="editCamFov = $event; onEditOrientationChange()"
+                         class="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-red-500">
+                  <div class="flex justify-between text-[8px] text-gray-600 mt-0.5">
+                    <span>10° estrecho</span><span>90°</span><span>180° angular</span><span>360°</span>
+                  </div>
+                </div>
+
+                <!-- Inclinación + Piso + Altura -->
+                <div class="grid grid-cols-3 gap-1.5">
+                  <div>
+                    <label class="text-[9px] text-gray-500 mb-0.5 block">Inclinación°</label>
+                    <input [(ngModel)]="editCamInclinacion" type="number" min="-90" max="90" placeholder="-90…90"
+                           class="w-full bg-gray-700/50 border border-gray-600 rounded px-2 py-1 text-[11px] text-white placeholder-gray-600 focus:outline-none focus:border-blue-500">
+                  </div>
+                  <div>
+                    <label class="text-[9px] text-gray-500 mb-0.5 block">Piso</label>
+                    <input [(ngModel)]="editCamPiso" type="number" placeholder="0 = PB"
+                           class="w-full bg-gray-700/50 border border-gray-600 rounded px-2 py-1 text-[11px] text-white placeholder-gray-600 focus:outline-none focus:border-blue-500">
+                  </div>
+                  <div>
+                    <label class="text-[9px] text-gray-500 mb-0.5 block">Altura (m)</label>
+                    <input [(ngModel)]="editCamAltura" type="number" step="0.1" placeholder="2.5"
+                           class="w-full bg-gray-700/50 border border-gray-600 rounded px-2 py-1 text-[11px] text-white placeholder-gray-600 focus:outline-none focus:border-blue-500">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Save button -->
+            <button (click)="saveEditCamera()"
+                    [disabled]="!editCamName.trim() || !editCamRtsp.trim() || savingEdit()"
+                    class="w-full px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-1.5">
+              @if (savingEdit()) {
+                <div class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Guardando...
+              } @else {
+                💾 Guardar cambios
+              }
+            </button>
+
+          </div>
+        </div>
+
+      </div>
+    } <!-- end @else minimizedForEditPick -->
+  } <!-- end @if showEditCamera -->
+
 </div>

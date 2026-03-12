@@ -19,7 +19,7 @@ import {
   SpatialNodeCreate,
   GeoPoint,
 } from '../../core/models/spatial.model';
-import { RtspSource } from '../../core/models/stream.model';
+import { RtspSource, RtspSourceCreate, RtspSourceUpdate } from '../../core/models/stream.model';
 
 const SATELLITE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 const STREET_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -46,6 +46,16 @@ const TIPO_COLORS: Record<SpatialNodeTipo, string> = {
     .custom-scrollbar::-webkit-scrollbar { width: 6px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
+    @keyframes fov-pulse {
+      0%, 100% { opacity: 0.20; }
+      50% { opacity: 0.35; }
+    }
+    .fov-cone { animation: fov-pulse 3s ease-in-out infinite; }
+    .fov-cone-active { animation: fov-pulse 1.2s ease-in-out infinite; opacity: 0.45 !important; }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   `],
 })
 export class GeocercasComponent implements OnInit, OnDestroy {
@@ -60,6 +70,8 @@ export class GeocercasComponent implements OnInit, OnDestroy {
   currentParentId = signal<string | undefined>(undefined);
   cameras = signal<RtspSource[]>([]);
   allCameras = signal<RtspSource[]>([]);
+  /** Cameras to display on the map — includes cameras from ALL descendant nodes. */
+  mapCameras = signal<RtspSource[]>([]);
   loading = signal(false);
   error = signal('');
 
@@ -80,8 +92,60 @@ export class GeocercasComponent implements OnInit, OnDestroy {
   // ── Camera assignment ──────────────────────────────────────────────────
   showAssignCamera = signal(false);
   selectedNodeForCamera = signal<SpatialNode | null>(null);
+  cameraModalTab = signal<'create' | 'assign'>('create');
+  savingCamera = signal(false);
+  pickingCamCoords = signal(false);
+  minimizedForPick = signal(false);
+  showOrientationFields = signal(false);
+  private camCoordsHandler?: (e: L.LeafletMouseEvent) => void;
+
+  // ── New camera form fields ─────────────────────────────────────────────
+  newCamName = '';
+  newCamRtsp = '';
+  newCamObs = '';
+  newCamGroup = '';
+  newCamLat: number | null = null;
+  newCamLng: number | null = null;
+  newCamAzimuth: number | null = null;
+  newCamFov: number | null = null;
+  newCamInclinacion: number | null = null;
+  newCamPiso: number | null = null;
+  newCamAltura: number | null = null;
+
+  /** Cameras loaded per-node for the inline expanded panels. */
+  nodeCamerasCache = signal<Record<string, RtspSource[]>>({});
+
+  /** Which node card is expanded in the list. */
+  expandedNodeId = signal<string | null>(null);
+
+  // ── Edit camera state ──────────────────────────────────────────────────
+  editingCamera = signal<RtspSource | null>(null);
+  showEditCamera = signal(false);
+  savingEdit = signal(false);
+  editCamName = '';
+  editCamRtsp = '';
+  editCamObs = '';
+  editCamGroup = '';
+  editCamLat: number | null = null;
+  editCamLng: number | null = null;
+  editCamAzimuth: number | null = null;
+  editCamFov: number | null = null;
+  editCamInclinacion: number | null = null;
+  editCamPiso: number | null = null;
+  editCamAltura: number | null = null;
+  pickingEditCoords = signal(false);
+  minimizedForEditPick = signal(false);
+  private editCoordsHandler?: (e: L.LeafletMouseEvent) => void;
+  /** Drag handle for rotating azimuth visually on map. */
+  private azimuthDragMarker?: L.Marker;
+  private editFovPreview?: L.Polygon;
+
+  /** Cameras not yet assigned to the currently selected node (for the assign modal). */
   unassignedCameras = computed(() => {
-    const assigned = new Set(this.cameras().map(c => c.id));
+    const node = this.selectedNodeForCamera();
+    if (!node) return this.allCameras();
+    const cache = this.nodeCamerasCache();
+    const assigned = new Set((cache[node.id] ?? []).map((c: RtspSource) => c.id));
     return this.allCameras().filter(c => !assigned.has(c.id));
   });
 
@@ -110,6 +174,7 @@ export class GeocercasComponent implements OnInit, OnDestroy {
   private nodePolygons: L.Polygon[] = [];
   private parentPolygon?: L.Polygon;
   private cameraMarkers: L.Marker[] = [];
+  private fovLayers: L.Polygon[] = [];
   private drawHandler?: (e: L.LeafletMouseEvent) => void;
   private mapInitialized = false;
 
@@ -168,12 +233,22 @@ export class GeocercasComponent implements OnInit, OnDestroy {
 
   loadNodeCameras(): void {
     const parentId = this.currentParentId();
-    if (parentId) {
+    const parentTipo = this.breadcrumb().at(-1)?.tipo;
+    // Cameras are only visible from PISO level and deeper (not at EDIFICIO/EXTERIOR)
+    const showCameras = parentTipo === 'PISO' || parentTipo === 'ZONA_INTERNA';
+
+    if (parentId && showCameras) {
+      // Direct cameras for the sidebar panel
       this.spatialSvc.listNodeCameras(parentId).subscribe({
         next: (cams) => this.cameras.set(cams),
       });
+      // Recursive cameras (this node + all descendants) for the map markers
+      this.spatialSvc.listNodeCameras(parentId, true).subscribe({
+        next: (cams) => this.mapCameras.set(cams),
+      });
     } else {
       this.cameras.set([]);
+      this.mapCameras.set([]);
     }
   }
 
@@ -311,6 +386,8 @@ export class GeocercasComponent implements OnInit, OnDestroy {
     this.parentPolygon = undefined;
     this.cameraMarkers.forEach(m => m.remove());
     this.cameraMarkers = [];
+    this.fovLayers.forEach(l => l.remove());
+    this.fovLayers = [];
   }
 
   /** Show the current parent node's polygon as a dashed context outline. */
@@ -408,21 +485,130 @@ export class GeocercasComponent implements OnInit, OnDestroy {
   private renderCameraMarkers(): void {
     this.cameraMarkers.forEach(m => m.remove());
     this.cameraMarkers = [];
+    this.fovLayers.forEach(l => l.remove());
+    this.fovLayers = [];
 
-    for (const cam of this.cameras()) {
+    const directIds = new Set(this.cameras().map(c => c.id));
+
+    for (const cam of this.mapCameras()) {
       if (cam.latitud != null && cam.longitud != null) {
+        const isDirect = directIds.has(cam.id);
+        const isEditing = this.editingCamera()?.id === cam.id;
+        // Camera marker
+        const html = isDirect
+          ? `<div class="flex items-center justify-center w-7 h-7 rounded-full ${isEditing ? 'bg-amber-500 ring-2 ring-amber-300 ring-offset-1 ring-offset-gray-900' : 'bg-red-600'} border-2 border-white shadow-lg text-white text-xs cursor-pointer transition-all duration-300" style="${isEditing ? 'transform:scale(1.2)' : ''}">📹</div>`
+          : `<div class="flex items-center justify-center w-5 h-5 rounded-full bg-orange-400 border-2 border-orange-700 shadow text-white text-xs cursor-pointer">📹</div>`;
+        const size: [number, number] = isDirect ? [28, 28] : [20, 20];
+        const anchor: [number, number] = isDirect ? [14, 14] : [10, 10];
         const marker = L.marker([cam.latitud, cam.longitud], {
-          icon: L.divIcon({
-            className: '',
-            html: `<div class="flex items-center justify-center w-6 h-6 rounded-full bg-red-600 border-2 border-white shadow-lg text-white text-xs">📹</div>`,
-            iconSize: [24, 24],
-            iconAnchor: [12, 12],
-          }),
+          icon: L.divIcon({ className: '', html, iconSize: size, iconAnchor: anchor }),
         }).addTo(this.map!);
-        marker.bindTooltip(cam.name, { direction: 'top' });
+        const label = isDirect ? cam.name : `${cam.name} (zona interna)`;
+        marker.bindTooltip(label, { direction: 'top' });
+        marker.on('click', () => this.openEditCamera(cam));
         this.cameraMarkers.push(marker);
+
+        // FOV cone — clipped to node walls
+        if (cam.azimuth != null && cam.latitud != null && cam.longitud != null) {
+          const walls = this.getWallSegments();
+          const cone = this.buildFovCone(cam, isEditing, walls);
+          if (cone) {
+            cone.addTo(this.map!);
+            this.fovLayers.push(cone);
+          }
+        }
       }
     }
+  }
+
+  /** Build a semi-transparent FOV cone polygon on the map, clipped by walls. */
+  private buildFovCone(cam: RtspSource, active = false, walls: [number, number, number, number][] = []): L.Polygon | null {
+    if (cam.latitud == null || cam.longitud == null || cam.azimuth == null) return null;
+    const fov = cam.fov_angulo ?? 90;
+    const range = 0.00035; // ~35m in degrees — visual range
+    const steps = 24; // smoothness
+    const half = fov / 2;
+    const pts: L.LatLngExpression[] = [[cam.latitud, cam.longitud]];
+
+    for (let i = 0; i <= steps; i++) {
+      const angle = cam.azimuth - half + (fov * i) / steps;
+      const rad = ((90 - angle) * Math.PI) / 180; // convert azimuth to math angle
+      const dx = range * Math.cos(rad);
+      const dy = range * Math.sin(rad);
+
+      // Raycast: find nearest wall intersection
+      let minT = 1;
+      for (const seg of walls) {
+        const t = this.raySegmentIntersect(
+          cam.longitud!, cam.latitud!, dx, dy,
+          seg[0], seg[1], seg[2], seg[3],
+        );
+        if (t !== null && t < minT) minT = t;
+      }
+
+      const lng = cam.longitud + dx * minT;
+      const lat = cam.latitud + dy * minT;
+      pts.push([lat, lng]);
+    }
+    pts.push([cam.latitud, cam.longitud]);
+
+    const color = active ? '#f59e0b' : '#ef4444';
+    return L.polygon(pts, {
+      color,
+      weight: 1,
+      fillColor: color,
+      fillOpacity: active ? 0.35 : 0.18,
+      className: active ? 'fov-cone fov-cone-active' : 'fov-cone',
+      interactive: false,
+    });
+  }
+
+  /**
+   * Collect all polygon edges (wall segments) from the parent node and child nodes.
+   * Each segment is [lng1, lat1, lng2, lat2].
+   */
+  private getWallSegments(): [number, number, number, number][] {
+    const segs: [number, number, number, number][] = [];
+    const addPoly = (points: GeoPoint[]) => {
+      for (let i = 0; i < points.length; i++) {
+        const a = points[i];
+        const b = points[(i + 1) % points.length];
+        segs.push([a.lng, a.lat, b.lng, b.lat]);
+      }
+    };
+    // Parent polygon = outer walls
+    const bc = this.breadcrumb();
+    if (bc.length > 0) {
+      const parent = bc[bc.length - 1];
+      if (parent.geo_poligono && parent.geo_poligono.length >= 3) {
+        addPoly(parent.geo_poligono);
+      }
+    }
+    // Child node polygons = internal walls
+    for (const node of this.nodes()) {
+      if (node.geo_poligono && node.geo_poligono.length >= 3) {
+        addPoly(node.geo_poligono);
+      }
+    }
+    return segs;
+  }
+
+  /**
+   * Ray-segment intersection. Returns parameter t (0..1) along the ray, or null.
+   * Ray: origin (ox,oy) + t * (dx,dy)   Segment: (ax,ay)→(bx,by)
+   */
+  private raySegmentIntersect(
+    ox: number, oy: number, dx: number, dy: number,
+    ax: number, ay: number, bx: number, by: number,
+  ): number | null {
+    const sx = bx - ax;
+    const sy = by - ay;
+    const denom = dx * sy - dy * sx;
+    if (Math.abs(denom) < 1e-15) return null; // parallel
+    const t = ((ax - ox) * sy - (ay - oy) * sx) / denom;
+    const u = ((ax - ox) * dy - (ay - oy) * dx) / denom;
+    if (t > 0.005 && t <= 1 && u >= 0 && u <= 1) return t;
+    return null;
   }
 
   // ── Polygon drawing ────────────────────────────────────────────────────
@@ -599,9 +785,113 @@ export class GeocercasComponent implements OnInit, OnDestroy {
 
   // ── Camera assignment ──────────────────────────────────────────────────
 
+  /** Toggle the inline camera panel for a node in the list. */
+  toggleNodeExpand(node: SpatialNode, event: Event): void {
+    event.stopPropagation();
+    const already = this.expandedNodeId() === node.id;
+    this.expandedNodeId.set(already ? null : node.id);
+    if (!already) {
+      this.loadCamerasForNode(node.id);
+    }
+  }
+
+  /** Load cameras for a specific node into the cache. */
+  loadCamerasForNode(nodeId: string): void {
+    this.spatialSvc.listNodeCameras(nodeId).subscribe({
+      next: (cams) => {
+        this.nodeCamerasCache.update(cache => ({ ...cache, [nodeId]: cams }));
+      },
+    });
+  }
+
   openAssignCamera(node: SpatialNode): void {
     this.selectedNodeForCamera.set(node);
+    // Ensure we have fresh cameras for this node in the cache
+    this.loadCamerasForNode(node.id);
+    // Reset create form
+    this.newCamName = '';
+    this.newCamRtsp = '';
+    this.newCamObs = '';
+    this.newCamGroup = '';
+    this.newCamLat = null;
+    this.newCamLng = null;
+    this.newCamAzimuth = null;
+    this.newCamFov = null;
+    this.newCamInclinacion = null;
+    this.newCamPiso = node.piso ?? null;
+    this.newCamAltura = null;
+    this.cameraModalTab.set('create');
+    this.savingCamera.set(false);
+    this.showOrientationFields.set(false);
     this.showAssignCamera.set(true);
+  }
+
+  closeAssignCamera(): void {
+    this.stopPickingCamCoords();
+    this.showAssignCamera.set(false);
+  }
+
+  /** Start map-click mode to pick camera coordinates. */
+  startPickingCamCoords(): void {
+    if (!this.map) return;
+    this.pickingCamCoords.set(true);
+    this.minimizedForPick.set(true); // collapse modal so map is visible
+    this.camCoordsHandler = (e: L.LeafletMouseEvent) => {
+      this.newCamLat = Math.round(e.latlng.lat * 1e6) / 1e6;
+      this.newCamLng = Math.round(e.latlng.lng * 1e6) / 1e6;
+      this.stopPickingCamCoords();
+      this.minimizedForPick.set(false); // restore modal
+    };
+    this.map.on('click', this.camCoordsHandler);
+    this.map.getContainer().style.cursor = 'crosshair';
+  }
+
+  stopPickingCamCoords(): void {
+    if (this.map && this.camCoordsHandler) {
+      this.map.off('click', this.camCoordsHandler);
+      this.map.getContainer().style.cursor = '';
+    }
+    this.pickingCamCoords.set(false);
+    this.camCoordsHandler = undefined;
+  }
+
+  cancelPickingCamCoords(): void {
+    this.stopPickingCamCoords();
+    this.minimizedForPick.set(false);
+  }
+
+  /** Create a brand-new camera pre-assigned to the current node. */
+  createCameraForNode(): void {
+    const node = this.selectedNodeForCamera();
+    if (!node || !this.newCamName.trim() || !this.newCamRtsp.trim()) return;
+    this.savingCamera.set(true);
+    const body: RtspSourceCreate = {
+      name: this.newCamName.trim(),
+      rtsp_url: this.newCamRtsp.trim(),
+      observation: this.newCamObs.trim() || undefined,
+      group_name: this.newCamGroup.trim() || undefined,
+      latitud: this.newCamLat ?? undefined,
+      longitud: this.newCamLng ?? undefined,
+      azimuth: this.newCamAzimuth ?? undefined,
+      fov_angulo: this.newCamFov ?? undefined,
+      inclinacion_angulo: this.newCamInclinacion ?? undefined,
+      piso: this.newCamPiso ?? undefined,
+      altura_m: this.newCamAltura ?? undefined,
+      spatial_node_id: node.id,
+    };
+    this.streamSvc.createSource(body).subscribe({
+      next: () => {
+        this.savingCamera.set(false);
+        this.closeAssignCamera();
+        this.loadCamerasForNode(node.id);
+        this.loadAllCameras();
+        this.loadNodes();
+      },
+      error: (err) => {
+        this.savingCamera.set(false);
+        this.error.set('Error creando cámara: ' + (err.error?.detail || err.message));
+      },
+    });
   }
 
   assignCameraToNode(cam: RtspSource): void {
@@ -609,13 +899,16 @@ export class GeocercasComponent implements OnInit, OnDestroy {
     if (!node) return;
     this.spatialSvc.assignCamera(node.id, cam.id).subscribe({
       next: () => {
-        this.loadNodeCameras();
+        this.loadCamerasForNode(node.id);
         this.loadAllCameras();
         this.loadNodes();
+        // If this node is also the current parent, refresh its cameras section
+        if (node.id === this.currentParentId()) this.loadNodeCameras();
       },
     });
   }
 
+  /** Unassign from the *current parent* node (used in the "Cámaras" section at top of list). */
   unassignCamera(cam: RtspSource): void {
     const parentId = this.currentParentId();
     if (!parentId) return;
@@ -624,6 +917,19 @@ export class GeocercasComponent implements OnInit, OnDestroy {
         this.loadNodeCameras();
         this.loadAllCameras();
         this.loadNodes();
+      },
+    });
+  }
+
+  /** Unassign from an inline expanded node card. */
+  unassignCameraFromNode(node: SpatialNode, cam: RtspSource, event: Event): void {
+    event.stopPropagation();
+    this.spatialSvc.unassignCamera(node.id, cam.id).subscribe({
+      next: () => {
+        this.loadCamerasForNode(node.id);
+        this.loadAllCameras();
+        this.loadNodes();
+        if (node.id === this.currentParentId()) this.loadNodeCameras();
       },
     });
   }
@@ -640,5 +946,164 @@ export class GeocercasComponent implements OnInit, OnDestroy {
     };
     this.map.on('click', handler);
     this.map.getContainer().style.cursor = 'crosshair';
+  }
+
+  // ── Edit camera ────────────────────────────────────────────────────────
+
+  openEditCamera(cam: RtspSource): void {
+    this.editingCamera.set(cam);
+    this.editCamName = cam.name;
+    this.editCamRtsp = cam.rtsp_url;
+    this.editCamObs = cam.observation ?? '';
+    this.editCamGroup = cam.group_name ?? '';
+    this.editCamLat = cam.latitud ?? null;
+    this.editCamLng = cam.longitud ?? null;
+    this.editCamAzimuth = cam.azimuth ?? null;
+    this.editCamFov = cam.fov_angulo ?? null;
+    this.editCamInclinacion = cam.inclinacion_angulo ?? null;
+    this.editCamPiso = cam.piso ?? null;
+    this.editCamAltura = cam.altura_m ?? null;
+    this.showEditCamera.set(true);
+    // Re-render so that the selected marker & cone highlight
+    this.renderCameraMarkers();
+    this.showAzimuthDragHandle();
+  }
+
+  closeEditCamera(): void {
+    this.stopPickingEditCoords();
+    this.removeAzimuthDragHandle();
+    this.editFovPreview?.remove();
+    this.editFovPreview = undefined;
+    this.editingCamera.set(null);
+    this.showEditCamera.set(false);
+    this.renderCameraMarkers();
+  }
+
+  /** Live-update the FOV cone preview on the map when slider changes. */
+  onEditOrientationChange(): void {
+    this.editFovPreview?.remove();
+    if (this.editCamLat != null && this.editCamLng != null && this.editCamAzimuth != null) {
+      const preview: RtspSource = {
+        ...this.editingCamera()!,
+        latitud: this.editCamLat,
+        longitud: this.editCamLng,
+        azimuth: this.editCamAzimuth,
+        fov_angulo: this.editCamFov ?? 90,
+      };
+      const walls = this.getWallSegments();
+      this.editFovPreview = this.buildFovCone(preview, true, walls) ?? undefined;
+      if (this.editFovPreview) this.editFovPreview.addTo(this.map!);
+    }
+    this.showAzimuthDragHandle();
+  }
+
+  /** Place a draggable marker at the tip of the azimuth direction to allow rotation by drag. */
+  private showAzimuthDragHandle(): void {
+    this.removeAzimuthDragHandle();
+    if (this.editCamLat == null || this.editCamLng == null || this.editCamAzimuth == null || !this.map) return;
+
+    const range = 0.00035;
+    const rad = ((90 - this.editCamAzimuth) * Math.PI) / 180;
+    const dx = range * Math.cos(rad);
+    const dy = range * Math.sin(rad);
+
+    // Clip handle position to nearest wall
+    const walls = this.getWallSegments();
+    let minT = 1;
+    for (const seg of walls) {
+      const t = this.raySegmentIntersect(this.editCamLng, this.editCamLat, dx, dy, seg[0], seg[1], seg[2], seg[3]);
+      if (t !== null && t < minT) minT = t;
+    }
+    const tipLat = this.editCamLat + dy * minT;
+    const tipLng = this.editCamLng + dx * minT;
+
+    this.azimuthDragMarker = L.marker([tipLat, tipLng], {
+      draggable: true,
+      icon: L.divIcon({
+        className: '',
+        html: `<div class="w-5 h-5 rounded-full bg-amber-400 border-2 border-white shadow-lg cursor-grab" style="opacity:0.85"></div>`,
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
+      }),
+    }).addTo(this.map);
+
+    this.azimuthDragMarker.bindTooltip('Arrastra para rotar', { direction: 'top', offset: [0, -10] });
+
+    this.azimuthDragMarker.on('drag', (e: any) => {
+      if (this.editCamLat == null || this.editCamLng == null) return;
+      const latlng = (e.target as L.Marker).getLatLng();
+      const dy = latlng.lat - this.editCamLat;
+      const dx = latlng.lng - this.editCamLng;
+      // Convert dx/dy back to azimuth (0=N, CW)
+      let azimuth = 90 - (Math.atan2(dy, dx) * 180) / Math.PI;
+      if (azimuth < 0) azimuth += 360;
+      this.editCamAzimuth = Math.round(azimuth);
+      this.onEditOrientationChange();
+    });
+  }
+
+  private removeAzimuthDragHandle(): void {
+    this.azimuthDragMarker?.remove();
+    this.azimuthDragMarker = undefined;
+  }
+
+  startPickingEditCoords(): void {
+    if (!this.map) return;
+    this.pickingEditCoords.set(true);
+    this.minimizedForEditPick.set(true);
+    this.editCoordsHandler = (e: L.LeafletMouseEvent) => {
+      this.editCamLat = Math.round(e.latlng.lat * 1e6) / 1e6;
+      this.editCamLng = Math.round(e.latlng.lng * 1e6) / 1e6;
+      this.stopPickingEditCoords();
+      this.minimizedForEditPick.set(false);
+    };
+    this.map.on('click', this.editCoordsHandler);
+    this.map.getContainer().style.cursor = 'crosshair';
+  }
+
+  stopPickingEditCoords(): void {
+    if (this.map && this.editCoordsHandler) {
+      this.map.off('click', this.editCoordsHandler);
+      this.map.getContainer().style.cursor = '';
+    }
+    this.pickingEditCoords.set(false);
+    this.editCoordsHandler = undefined;
+  }
+
+  cancelPickingEditCoords(): void {
+    this.stopPickingEditCoords();
+    this.minimizedForEditPick.set(false);
+  }
+
+  saveEditCamera(): void {
+    const cam = this.editingCamera();
+    if (!cam || !this.editCamName.trim() || !this.editCamRtsp.trim()) return;
+    this.savingEdit.set(true);
+    const body: RtspSourceUpdate = {
+      name: this.editCamName.trim(),
+      rtsp_url: this.editCamRtsp.trim(),
+      observation: this.editCamObs.trim() || undefined,
+      group_name: this.editCamGroup.trim() || undefined,
+      latitud: this.editCamLat ?? undefined,
+      longitud: this.editCamLng ?? undefined,
+      azimuth: this.editCamAzimuth ?? undefined,
+      fov_angulo: this.editCamFov ?? undefined,
+      inclinacion_angulo: this.editCamInclinacion ?? undefined,
+      piso: this.editCamPiso ?? undefined,
+      altura_m: this.editCamAltura ?? undefined,
+    };
+    this.streamSvc.updateSource(cam.id, body).subscribe({
+      next: () => {
+        this.savingEdit.set(false);
+        this.closeEditCamera();
+        this.loadNodeCameras();
+        this.loadAllCameras();
+        this.loadNodes();
+      },
+      error: (err) => {
+        this.savingEdit.set(false);
+        this.error.set('Error guardando cámara: ' + (err.error?.detail || err.message));
+      },
+    });
   }
 }
