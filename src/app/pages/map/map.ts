@@ -83,6 +83,40 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   camerasNoCoords = computed(() =>
     this.cameras().filter(c => c.latitud == null || c.longitud == null)
   );
+  // Interior SVG view (cameras with floor-plan coordinates)
+  viewLayer = signal<'exterior' | 'interior'>('exterior');
+  camerasInterior = computed(() =>
+    this.cameras().filter(c => c.posicion_x != null && c.posicion_y != null)
+  );
+  svgViewBox = computed(() => {
+    const cams = this.camerasInterior();
+    if (cams.length === 0) return '0 0 800 600';
+    const xs = cams.map(c => c.posicion_x!);
+    const ys = cams.map(c => c.posicion_y!);
+    const pad = 80;
+    const minX = Math.min(...xs) - pad;
+    const minY = Math.min(...ys) - pad;
+    const w = Math.max(...xs) + pad - minX;
+    const h = Math.max(...ys) + pad - minY;
+    return `${minX} ${minY} ${w} ${h}`;
+  });
+  interiorActiveCameraNames = computed(() =>
+    new Set(this.activeSessions().map(s => s.camara))
+  );
+  interiorRouteWithCoords = computed(() => {
+    const base = this.anomalies().length > 0
+      ? this.anomalies()
+      : this.route().map(r => ({ ...r, is_anomaly: false, prev_camara: null, gap_seconds: null } as RouteEntryWithAnomaly));
+    return base
+      .map(e => {
+        const cam = this.cameras().find(c => c.name === e.camara);
+        return { ...e, _x: cam?.posicion_x as number | undefined, _y: cam?.posicion_y as number | undefined };
+      })
+      .filter(e => e._x != null && e._y != null);
+  });
+  svgRoutePolyline = computed(() =>
+    this.interiorRouteWithCoords().map(e => `${e._x},${e._y}`).join(' ')
+  );
   activeEnrolled = computed(() =>
     this.activeSessions().filter(s => s.enrollado)
   );
@@ -558,6 +592,17 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     this.animFrame = requestAnimationFrame(tick);
 
     this.map?.panTo(latlng, { animate: true, duration: 0.4 });
+  }
+
+  switchView(layer: 'exterior' | 'interior'): void {
+    this.viewLayer.set(layer);
+  }
+
+  fovEndPoint(cam: RtspSource): { x: number; y: number } | null {
+    if (cam.posicion_x == null || cam.posicion_y == null || cam.azimuth == null) return null;
+    const rad = ((cam.azimuth - 90) * Math.PI) / 180;
+    const dist = 50;
+    return { x: cam.posicion_x + dist * Math.cos(rad), y: cam.posicion_y + dist * Math.sin(rad) };
   }
 
   formatTs(ts: number): string {

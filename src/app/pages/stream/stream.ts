@@ -97,6 +97,13 @@ export class StreamComponent implements OnInit {
   newRtsp = '';
   newObservation = '';
   newGroupName = '';
+  newLatitud: number | null = null;
+  newLongitud: number | null = null;
+  newPosX: number | null = null;
+  newPosY: number | null = null;
+  newAzimuth: number | null = null;
+  newFovAngulo: number | null = null;
+  newPiso: number | null = null;
   addError = signal<string | null>(null);
   addLoading = signal(false);
 
@@ -106,6 +113,13 @@ export class StreamComponent implements OnInit {
   editRtsp = '';
   editObservation = '';
   editGroupName = '';
+  editLatitud: number | null = null;
+  editLongitud: number | null = null;
+  editPosX: number | null = null;
+  editPosY: number | null = null;
+  editAzimuth: number | null = null;
+  editFovAngulo: number | null = null;
+  editPiso: number | null = null;
   editError = signal<string | null>(null);
   editLoading = signal(false);
 
@@ -330,6 +344,13 @@ export class StreamComponent implements OnInit {
     this.newRtsp = '';
     this.newObservation = '';
     this.newGroupName = '';
+    this.newLatitud = null;
+    this.newLongitud = null;
+    this.newPosX = null;
+    this.newPosY = null;
+    this.newAzimuth = null;
+    this.newFovAngulo = null;
+    this.newPiso = null;
     this.addError.set(null);
     this.showAddForm.set(true);
   }
@@ -348,6 +369,13 @@ export class StreamComponent implements OnInit {
       rtsp_url: this.newRtsp.trim(),
       observation: this.newObservation.trim() || undefined,
       group_name: this.newGroupName.trim() || undefined,
+      latitud: this.newLatitud ?? undefined,
+      longitud: this.newLongitud ?? undefined,
+      posicion_x: this.newPosX ?? undefined,
+      posicion_y: this.newPosY ?? undefined,
+      azimuth: this.newAzimuth ?? undefined,
+      fov_angulo: this.newFovAngulo ?? undefined,
+      piso: this.newPiso ?? undefined,
     };
     this.addLoading.set(true);
     this.addError.set(null);
@@ -371,6 +399,13 @@ export class StreamComponent implements OnInit {
     this.editRtsp = source.rtsp_url;
     this.editObservation = source.observation ?? '';
     this.editGroupName = source.group_name ?? '';
+    this.editLatitud = source.latitud ?? null;
+    this.editLongitud = source.longitud ?? null;
+    this.editPosX = source.posicion_x ?? null;
+    this.editPosY = source.posicion_y ?? null;
+    this.editAzimuth = source.azimuth ?? null;
+    this.editFovAngulo = source.fov_angulo ?? null;
+    this.editPiso = source.piso ?? null;
     this.editError.set(null);
   }
 
@@ -391,6 +426,13 @@ export class StreamComponent implements OnInit {
         rtsp_url: this.editRtsp.trim(),
         observation: this.editObservation.trim() || undefined,
         group_name: this.editGroupName.trim() || undefined,
+        latitud: this.editLatitud ?? undefined,
+        longitud: this.editLongitud ?? undefined,
+        posicion_x: this.editPosX ?? undefined,
+        posicion_y: this.editPosY ?? undefined,
+        azimuth: this.editAzimuth ?? undefined,
+        fov_angulo: this.editFovAngulo ?? undefined,
+        piso: this.editPiso ?? undefined,
       })
       .subscribe({
         next: (updated) => {

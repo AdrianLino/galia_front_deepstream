@@ -76,6 +76,47 @@
               class="w-full bg-gray-900/50 text-white rounded-lg px-3 py-2 text-sm border border-gray-700 focus:border-blue-500 transition-all outline-none" />
           </div>
         </div>
+        <!-- Spatial fields -->
+        <div class="pt-1 border-t border-gray-700/50">
+          <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Posicionamiento (Mapa)</p>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] text-gray-400 mb-1">Latitud</label>
+              <input [(ngModel)]="newLatitud" type="number" step="any" placeholder="4.6097"
+                class="w-full bg-gray-900/50 text-white rounded px-2 py-1.5 text-xs border border-gray-700 focus:border-blue-500 outline-none" />
+            </div>
+            <div>
+              <label class="block text-[10px] text-gray-400 mb-1">Longitud</label>
+              <input [(ngModel)]="newLongitud" type="number" step="any" placeholder="-74.0817"
+                class="w-full bg-gray-900/50 text-white rounded px-2 py-1.5 text-xs border border-gray-700 focus:border-blue-500 outline-none" />
+            </div>
+            <div>
+              <label class="block text-[10px] text-gray-400 mb-1">Pos X (interior)</label>
+              <input [(ngModel)]="newPosX" type="number" step="any" placeholder="120"
+                class="w-full bg-gray-900/50 text-white rounded px-2 py-1.5 text-xs border border-gray-700 focus:border-blue-500 outline-none" />
+            </div>
+            <div>
+              <label class="block text-[10px] text-gray-400 mb-1">Pos Y (interior)</label>
+              <input [(ngModel)]="newPosY" type="number" step="any" placeholder="80"
+                class="w-full bg-gray-900/50 text-white rounded px-2 py-1.5 text-xs border border-gray-700 focus:border-blue-500 outline-none" />
+            </div>
+            <div>
+              <label class="block text-[10px] text-gray-400 mb-1">Azimuth (°)</label>
+              <input [(ngModel)]="newAzimuth" type="number" step="1" min="0" max="359" placeholder="0"
+                class="w-full bg-gray-900/50 text-white rounded px-2 py-1.5 text-xs border border-gray-700 focus:border-blue-500 outline-none" />
+            </div>
+            <div>
+              <label class="block text-[10px] text-gray-400 mb-1">FOV (°)</label>
+              <input [(ngModel)]="newFovAngulo" type="number" step="1" min="1" max="360" placeholder="90"
+                class="w-full bg-gray-900/50 text-white rounded px-2 py-1.5 text-xs border border-gray-700 focus:border-blue-500 outline-none" />
+            </div>
+            <div>
+              <label class="block text-[10px] text-gray-400 mb-1">Piso</label>
+              <input [(ngModel)]="newPiso" type="number" step="1" placeholder="1"
+                class="w-full bg-gray-900/50 text-white rounded px-2 py-1.5 text-xs border border-gray-700 focus:border-blue-500 outline-none" />
+            </div>
+          </div>
+        </div>
       </div>
       @if (addError()) {
       <p class="text-xs text-red-400 bg-red-400/10 p-2 rounded border border-red-400/20">{{ addError() }}</p>
@@ -173,6 +214,19 @@
                 <div>
                   <label class="block text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-1">Obs.</label>
                   <input [(ngModel)]="editObservation" type="text" class="w-full bg-gray-900/80 text-white rounded px-3 py-1.5 text-sm border border-gray-700 focus:border-blue-500 outline-none" />
+                </div>
+              </div>
+              <!-- Spatial fields -->
+              <div class="border-t border-gray-700/50 pt-2">
+                <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Posicionamiento</p>
+                <div class="grid grid-cols-2 gap-2">
+                  <div><label class="block text-[10px] text-gray-400 mb-1">Latitud</label><input [(ngModel)]="editLatitud" type="number" step="any" placeholder="4.6097" class="w-full bg-gray-900/80 text-white rounded px-2 py-1.5 text-xs border border-gray-700 focus:border-blue-500 outline-none" /></div>
+                  <div><label class="block text-[10px] text-gray-400 mb-1">Longitud</label><input [(ngModel)]="editLongitud" type="number" step="any" placeholder="-74.0817" class="w-full bg-gray-900/80 text-white rounded px-2 py-1.5 text-xs border border-gray-700 focus:border-blue-500 outline-none" /></div>
+                  <div><label class="block text-[10px] text-gray-400 mb-1">Pos X</label><input [(ngModel)]="editPosX" type="number" step="any" placeholder="120" class="w-full bg-gray-900/80 text-white rounded px-2 py-1.5 text-xs border border-gray-700 focus:border-blue-500 outline-none" /></div>
+                  <div><label class="block text-[10px] text-gray-400 mb-1">Pos Y</label><input [(ngModel)]="editPosY" type="number" step="any" placeholder="80" class="w-full bg-gray-900/80 text-white rounded px-2 py-1.5 text-xs border border-gray-700 focus:border-blue-500 outline-none" /></div>
+                  <div><label class="block text-[10px] text-gray-400 mb-1">Azimuth (°)</label><input [(ngModel)]="editAzimuth" type="number" step="1" min="0" max="359" placeholder="0" class="w-full bg-gray-900/80 text-white rounded px-2 py-1.5 text-xs border border-gray-700 focus:border-blue-500 outline-none" /></div>
+                  <div><label class="block text-[10px] text-gray-400 mb-1">FOV (°)</label><input [(ngModel)]="editFovAngulo" type="number" step="1" min="1" max="360" placeholder="90" class="w-full bg-gray-900/80 text-white rounded px-2 py-1.5 text-xs border border-gray-700 focus:border-blue-500 outline-none" /></div>
+                  <div><label class="block text-[10px] text-gray-400 mb-1">Piso</label><input [(ngModel)]="editPiso" type="number" step="1" placeholder="1" class="w-full bg-gray-900/80 text-white rounded px-2 py-1.5 text-xs border border-gray-700 focus:border-blue-500 outline-none" /></div>
                 </div>
               </div>
             </div>
@@ -290,6 +344,19 @@
                        <div>
                          <label class="block text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-1">Obs.</label>
                          <input [(ngModel)]="editObservation" type="text" class="w-full bg-gray-900/80 text-white rounded px-3 py-1.5 text-sm border border-gray-700 focus:border-blue-500 outline-none" />
+                       </div>
+                     </div>
+                     <!-- Spatial fields -->
+                     <div class="border-t border-gray-700/50 pt-2">
+                       <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Posicionamiento</p>
+                       <div class="grid grid-cols-2 gap-2">
+                         <div><label class="block text-[10px] text-gray-400 mb-1">Latitud</label><input [(ngModel)]="editLatitud" type="number" step="any" placeholder="4.6097" class="w-full bg-gray-900/80 text-white rounded px-2 py-1.5 text-xs border border-gray-700 focus:border-blue-500 outline-none" /></div>
+                         <div><label class="block text-[10px] text-gray-400 mb-1">Longitud</label><input [(ngModel)]="editLongitud" type="number" step="any" placeholder="-74.0817" class="w-full bg-gray-900/80 text-white rounded px-2 py-1.5 text-xs border border-gray-700 focus:border-blue-500 outline-none" /></div>
+                         <div><label class="block text-[10px] text-gray-400 mb-1">Pos X</label><input [(ngModel)]="editPosX" type="number" step="any" placeholder="120" class="w-full bg-gray-900/80 text-white rounded px-2 py-1.5 text-xs border border-gray-700 focus:border-blue-500 outline-none" /></div>
+                         <div><label class="block text-[10px] text-gray-400 mb-1">Pos Y</label><input [(ngModel)]="editPosY" type="number" step="any" placeholder="80" class="w-full bg-gray-900/80 text-white rounded px-2 py-1.5 text-xs border border-gray-700 focus:border-blue-500 outline-none" /></div>
+                         <div><label class="block text-[10px] text-gray-400 mb-1">Azimuth (°)</label><input [(ngModel)]="editAzimuth" type="number" step="1" min="0" max="359" placeholder="0" class="w-full bg-gray-900/80 text-white rounded px-2 py-1.5 text-xs border border-gray-700 focus:border-blue-500 outline-none" /></div>
+                         <div><label class="block text-[10px] text-gray-400 mb-1">FOV (°)</label><input [(ngModel)]="editFovAngulo" type="number" step="1" min="1" max="360" placeholder="90" class="w-full bg-gray-900/80 text-white rounded px-2 py-1.5 text-xs border border-gray-700 focus:border-blue-500 outline-none" /></div>
+                         <div><label class="block text-[10px] text-gray-400 mb-1">Piso</label><input [(ngModel)]="editPiso" type="number" step="1" placeholder="1" class="w-full bg-gray-900/80 text-white rounded px-2 py-1.5 text-xs border border-gray-700 focus:border-blue-500 outline-none" /></div>
                        </div>
                      </div>
                    </div>

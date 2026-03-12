@@ -312,7 +312,119 @@
 
   <!-- ── Map canvas ──────────────────────────────────────────────────────────── -->
   <div class="flex-1 relative">
-    <div #mapDiv class="w-full h-full"></div>
+
+    <!-- View toggle (only when interior cameras exist) -->
+    <div *ngIf="camerasInterior().length > 0"
+         class="absolute top-3 left-1/2 -translate-x-1/2 z-[500] flex rounded-lg overflow-hidden border border-gray-700 shadow-xl text-xs font-semibold">
+      <button (click)="switchView('exterior')"
+              [class.bg-blue-700]="viewLayer() === 'exterior'"
+              [class.text-white]="viewLayer() === 'exterior'"
+              [class.bg-gray-900]="viewLayer() !== 'exterior'"
+              [class.text-gray-400]="viewLayer() !== 'exterior'"
+              class="px-4 py-1.5 transition-colors flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/></svg>
+        Exterior
+      </button>
+      <button (click)="switchView('interior')"
+              [class.bg-purple-700]="viewLayer() === 'interior'"
+              [class.text-white]="viewLayer() === 'interior'"
+              [class.bg-gray-900]="viewLayer() !== 'interior'"
+              [class.text-gray-400]="viewLayer() !== 'interior'"
+              class="px-4 py-1.5 transition-colors flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+        Interior
+      </button>
+    </div>
+
+    <!-- Leaflet map (always in DOM for init, hidden in interior mode) -->
+    <div #mapDiv class="w-full h-full" [class.hidden]="viewLayer() === 'interior'"></div>
+
+    <!-- ── Interior SVG floor plan ── -->
+    <div *ngIf="viewLayer() === 'interior'" class="w-full h-full bg-gray-950 flex flex-col overflow-hidden">
+      <div class="flex-1 overflow-hidden p-2">
+        <svg [attr.viewBox]="svgViewBox()" class="w-full h-full" preserveAspectRatio="xMidYMid meet">
+          <!-- Grid background -->
+          <defs>
+            <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+              <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#1f2937" stroke-width="1"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#grid)" x="-10000" y="-10000" width="20000" height="20000"/>
+
+          <!-- Route polyline -->
+          <polyline *ngIf="svgRoutePolyline()"
+                    [attr.points]="svgRoutePolyline()"
+                    fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="8 4" opacity="0.7"/>
+
+          <!-- FOV lines -->
+          <ng-container *ngFor="let cam of camerasInterior()">
+            <ng-container *ngIf="fovEndPoint(cam) as fov">
+              <line [attr.x1]="cam.posicion_x" [attr.y1]="cam.posicion_y"
+                    [attr.x2]="fov.x" [attr.y2]="fov.y"
+                    stroke="#60a5fa" stroke-width="1.5" stroke-dasharray="5 4" opacity="0.5"/>
+            </ng-container>
+          </ng-container>
+
+          <!-- Route stop markers -->
+          <ng-container *ngFor="let entry of interiorRouteWithCoords(); let i = index">
+            <circle [attr.cx]="entry._x" [attr.cy]="entry._y" r="14"
+                    [attr.fill]="$any(entry).is_anomaly ? '#ef4444' : '#f59e0b'"
+                    [attr.stroke]="currentStep() === i ? '#fff' : ($any(entry).is_anomaly ? '#991b1b' : '#92400e')"
+                    [attr.stroke-width]="currentStep() === i ? 3 : 2" opacity="0.9"/>
+            <text [attr.x]="entry._x" [attr.y]="entry._y" text-anchor="middle" dominant-baseline="central"
+                  fill="#000" font-size="10" font-weight="800">{{ $any(entry).is_anomaly ? '!' : (i + 1) }}</text>
+          </ng-container>
+
+          <!-- Camera markers -->
+          <ng-container *ngFor="let cam of camerasInterior()">
+            <!-- Pulse ring for active cameras -->
+            <circle *ngIf="interiorActiveCameraNames().has(cam.name)"
+                    [attr.cx]="cam.posicion_x" [attr.cy]="cam.posicion_y" r="22"
+                    fill="#22c55e" opacity="0.15" stroke="#22c55e" stroke-width="1"/>
+            <!-- Main dot -->
+            <circle [attr.cx]="cam.posicion_x" [attr.cy]="cam.posicion_y"
+                    [attr.r]="interiorActiveCameraNames().has(cam.name) ? 12 : 9"
+                    [attr.fill]="interiorActiveCameraNames().has(cam.name) ? '#22c55e' : '#3b82f6'"
+                    [attr.stroke]="interiorActiveCameraNames().has(cam.name) ? '#15803d' : '#1d4ed8'"
+                    stroke-width="2"/>
+            <!-- Label -->
+            <text [attr.x]="cam.posicion_x" [attr.y]="cam.posicion_y! - 17"
+                  text-anchor="middle" fill="#f3f4f6" font-size="11" font-weight="600"
+                  style="text-shadow: 0 1px 3px #000">{{ cam.name }}</text>
+            <!-- Floor badge -->
+            <text *ngIf="cam.piso != null" [attr.x]="cam.posicion_x" [attr.y]="cam.posicion_y! + 22"
+                  text-anchor="middle" fill="#9ca3af" font-size="9">P{{ cam.piso }}</text>
+          </ng-container>
+
+          <!-- Playback moving marker -->
+          <ng-container *ngIf="currentStep() >= 0 && interiorRouteWithCoords()[currentStep()] as cur">
+            <circle [attr.cx]="cur._x" [attr.cy]="cur._y" r="7"
+                    fill="#22d3ee" stroke="#0891b2" stroke-width="3" opacity="0.95"/>
+          </ng-container>
+        </svg>
+      </div>
+
+      <!-- Interior legend -->
+      <div class="flex items-center gap-4 px-4 py-2 border-t border-gray-800 text-xs text-gray-500">
+        <div class="flex items-center gap-1.5">
+          <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+          <span>Cámara</span>
+        </div>
+        <div class="flex items-center gap-1.5" *ngIf="mode() === 'live'">
+          <div class="w-3 h-3 rounded-full bg-green-500"></div>
+          <span>Activa</span>
+        </div>
+        <div class="flex items-center gap-1.5" *ngIf="mode() === 'forensic' && route().length > 0">
+          <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+          <span>Recorrido</span>
+        </div>
+        <div class="flex items-center gap-1.5" *ngIf="anomalyCount() > 0">
+          <div class="w-3 h-3 rounded-full bg-red-500"></div>
+          <span>Anomalía</span>
+        </div>
+        <span class="ml-auto">{{ camerasInterior().length }} cámaras · Interior</span>
+      </div>
+    </div>
 
     <!-- Graph unavailable overlay (only in forensic) -->
     <div *ngIf="!graphAvailable() && mode() === 'forensic'"
