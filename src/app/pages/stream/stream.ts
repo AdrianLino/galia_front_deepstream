@@ -1,6 +1,16 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import {
+  Component,
+  inject,
+  signal,
+  computed,
+  OnInit,
+  OnDestroy,
+  ElementRef,
+  ViewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import * as L from 'leaflet';
 import { StreamService } from '../../core/services/stream.service';
 import {
   StreamStatusResponse,
@@ -9,6 +19,7 @@ import {
 } from '../../core/models/stream.model';
 
 export type ViewMode = 'mosaic' | 'single';
+type HeightPreset = 'basement' | 'ceiling' | 'wall-high' | 'wall-mid' | 'turnstile' | 'custom';
 
 @Component({
   selector: 'app-stream',
@@ -21,8 +32,12 @@ export type ViewMode = 'mosaic' | 'single';
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #6b7280; }
   `]
 })
-export class StreamComponent implements OnInit {
+export class StreamComponent implements OnInit, OnDestroy {
   private streamService = inject(StreamService);
+
+  @ViewChild('addMapDiv') addMapDiv?: ElementRef<HTMLDivElement>;
+  @ViewChild('largeMapDiv') largeMapDiv?: ElementRef<HTMLDivElement>;
+  @ViewChild('interiorPicker') interiorPicker?: ElementRef<HTMLDivElement>;
 
   // ── Pipeline state ────────────────────────────────────────────────────────
   status = signal<StreamStatusResponse | null>(null);
@@ -93,6 +108,8 @@ export class StreamComponent implements OnInit {
 
   // Add-source form
   showAddForm = signal(false);
+  showAddFullscreen = signal(false);
+  showLargeMap = signal(false);
   newName = '';
   newRtsp = '';
   newObservation = '';
@@ -102,8 +119,11 @@ export class StreamComponent implements OnInit {
   newPosX: number | null = null;
   newPosY: number | null = null;
   newAzimuth: number | null = null;
+  newInclinacionAngulo: number | null = null;
   newFovAngulo: number | null = null;
   newPiso: number | null = null;
+  newAlturaM: number | null = null;
+  newHeightPreset: HeightPreset = 'ceiling';
   addError = signal<string | null>(null);
   addLoading = signal(false);
 
@@ -118,13 +138,33 @@ export class StreamComponent implements OnInit {
   editPosX: number | null = null;
   editPosY: number | null = null;
   editAzimuth: number | null = null;
+  editInclinacionAngulo: number | null = null;
   editFovAngulo: number | null = null;
   editPiso: number | null = null;
+  editAlturaM: number | null = null;
   editError = signal<string | null>(null);
   editLoading = signal(false);
 
   // Groups
   collapsedGroups = signal<Set<string>>(new Set());
+
+  // Add-form map helpers
+  private addMap?: L.Map;
+  private addMapMarker?: L.CircleMarker;
+  private largeMap?: L.Map;
+  private largeMapMarker?: L.CircleMarker;
+  private readonly defaultAddMapCenter: L.LatLngExpression = [4.6097, -74.0817];
+  private readonly satelliteTileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+  private readonly satelliteAttribution = 'Tiles © Esri';
+
+  readonly heightPresets: Array<{ value: HeightPreset; label: string; meters: number | null }> = [
+    { value: 'basement', label: 'Sotano/Piso inferior (0.0 m)', meters: 0 },
+    { value: 'ceiling', label: 'Techo (2.8 m)', meters: 2.8 },
+    { value: 'wall-high', label: 'Pared alta (2.4 m)', meters: 2.4 },
+    { value: 'wall-mid', label: 'Pared media (1.8 m)', meters: 1.8 },
+    { value: 'turnstile', label: 'Torniquete/Poste (1.2 m)', meters: 1.2 },
+    { value: 'custom', label: 'Personalizado', meters: null },
+  ];
 
   // ── Computed ──────────────────────────────────────────────────────────────
 
@@ -151,6 +191,15 @@ export class StreamComponent implements OnInit {
   ngOnInit() {
     this.refreshStatus();
     this.loadSources();
+  }
+
+  ngOnDestroy(): void {
+    this.addMap?.remove();
+    this.largeMap?.remove();
+    this.addMap = undefined;
+    this.largeMap = undefined;
+    this.addMapMarker = undefined;
+    this.largeMapMarker = undefined;
   }
 
   // ── Pipeline methods ──────────────────────────────────────────────────────
@@ -349,14 +398,26 @@ export class StreamComponent implements OnInit {
     this.newPosX = null;
     this.newPosY = null;
     this.newAzimuth = null;
+    this.newInclinacionAngulo = null;
     this.newFovAngulo = null;
     this.newPiso = null;
+    this.newHeightPreset = 'ceiling';
+    this.newAlturaM = 2.8;
     this.addError.set(null);
     this.showAddForm.set(true);
+
+    // Wait for DOM to render the map container before initializing Leaflet.
+    setTimeout(() => this.initAddMap(), 0);
   }
 
   cancelAdd() {
+    this.showAddFullscreen.set(false);
     this.showAddForm.set(false);
+  }
+
+  toggleAddFullscreen(): void {
+    this.showAddFullscreen.update((value) => !value);
+    setTimeout(() => this.addMap?.invalidateSize(), 0);
   }
 
   saveSource() {
@@ -374,8 +435,10 @@ export class StreamComponent implements OnInit {
       posicion_x: this.newPosX ?? undefined,
       posicion_y: this.newPosY ?? undefined,
       azimuth: this.newAzimuth ?? undefined,
+      inclinacion_angulo: this.newInclinacionAngulo ?? undefined,
       fov_angulo: this.newFovAngulo ?? undefined,
       piso: this.newPiso ?? undefined,
+      altura_m: this.newAlturaM ?? undefined,
     };
     this.addLoading.set(true);
     this.addError.set(null);
@@ -404,8 +467,10 @@ export class StreamComponent implements OnInit {
     this.editPosX = source.posicion_x ?? null;
     this.editPosY = source.posicion_y ?? null;
     this.editAzimuth = source.azimuth ?? null;
+    this.editInclinacionAngulo = source.inclinacion_angulo ?? null;
     this.editFovAngulo = source.fov_angulo ?? null;
     this.editPiso = source.piso ?? null;
+    this.editAlturaM = source.altura_m ?? null;
     this.editError.set(null);
   }
 
@@ -431,8 +496,10 @@ export class StreamComponent implements OnInit {
         posicion_x: this.editPosX ?? undefined,
         posicion_y: this.editPosY ?? undefined,
         azimuth: this.editAzimuth ?? undefined,
+        inclinacion_angulo: this.editInclinacionAngulo ?? undefined,
         fov_angulo: this.editFovAngulo ?? undefined,
         piso: this.editPiso ?? undefined,
+        altura_m: this.editAlturaM ?? undefined,
       })
       .subscribe({
         next: (updated) => {
@@ -463,5 +530,218 @@ export class StreamComponent implements OnInit {
         this.sourcesError.set(err?.error?.detail ?? 'Error al eliminar la fuente.');
       },
     });
+  }
+
+  initAddMap(): void {
+    const host = this.addMapDiv?.nativeElement;
+    if (!host) return;
+
+    if (!this.addMap) {
+      this.addMap = L.map(host, {
+        center: this.defaultAddMapCenter,
+        zoom: 17,
+        zoomControl: true,
+      });
+
+      L.tileLayer(this.satelliteTileUrl, {
+        attribution: this.satelliteAttribution,
+        maxZoom: 22,
+      }).addTo(this.addMap);
+
+      this.addMap.on('click', (ev: L.LeafletMouseEvent) => {
+        this.newLatitud = Number(ev.latlng.lat.toFixed(6));
+        this.newLongitud = Number(ev.latlng.lng.toFixed(6));
+        this.updateAddMapMarker();
+      });
+    }
+
+    this.addMap.invalidateSize();
+    this.updateAddMapMarker();
+    if (this.newLatitud != null && this.newLongitud != null) {
+      this.addMap.setView([this.newLatitud, this.newLongitud], Math.max(this.addMap.getZoom(), 17));
+    }
+  }
+
+  openLargeMap(): void {
+    this.showLargeMap.set(true);
+    setTimeout(() => this.initLargeMap(), 0);
+  }
+
+  closeLargeMap(): void {
+    this.showLargeMap.set(false);
+  }
+
+  initLargeMap(): void {
+    const host = this.largeMapDiv?.nativeElement;
+    if (!host) return;
+
+    if (!this.largeMap) {
+      this.largeMap = L.map(host, {
+        center: this.defaultAddMapCenter,
+        zoom: 18,
+        zoomControl: true,
+      });
+
+      L.tileLayer(this.satelliteTileUrl, {
+        attribution: this.satelliteAttribution,
+        maxZoom: 22,
+      }).addTo(this.largeMap);
+
+      this.largeMap.on('click', (ev: L.LeafletMouseEvent) => {
+        this.newLatitud = Number(ev.latlng.lat.toFixed(6));
+        this.newLongitud = Number(ev.latlng.lng.toFixed(6));
+        this.updateAddMapMarker();
+      });
+    }
+
+    this.largeMap.invalidateSize();
+    this.updateAddMapMarker();
+    if (this.newLatitud != null && this.newLongitud != null) {
+      this.largeMap.setView([this.newLatitud, this.newLongitud], Math.max(this.largeMap.getZoom(), 18));
+    } else {
+      this.largeMap.setView(this.defaultAddMapCenter, 18);
+    }
+  }
+
+  useMyLocation(): void {
+    if (!navigator.geolocation) {
+      this.addError.set('Tu navegador no soporta geolocalizacion.');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        this.newLatitud = Number(pos.coords.latitude.toFixed(6));
+        this.newLongitud = Number(pos.coords.longitude.toFixed(6));
+        this.updateAddMapMarker();
+        if (this.addMap) this.addMap.setView([this.newLatitud, this.newLongitud], 18);
+        if (this.largeMap) this.largeMap.setView([this.newLatitud, this.newLongitud], 19);
+      },
+      () => this.addError.set('No fue posible obtener tu ubicacion actual.')
+    );
+  }
+
+  private updateAddMapMarker(): void {
+    if (this.newLatitud == null || this.newLongitud == null) return;
+    const latLng: L.LatLngExpression = [this.newLatitud, this.newLongitud];
+
+    if (this.addMap) {
+      if (!this.addMapMarker) {
+        this.addMapMarker = L.circleMarker(latLng, {
+          radius: 8,
+          fillColor: '#2563eb',
+          color: '#1d4ed8',
+          weight: 2,
+          fillOpacity: 0.9,
+        }).addTo(this.addMap);
+      } else {
+        this.addMapMarker.setLatLng(latLng);
+      }
+    }
+
+    if (this.largeMap) {
+      if (!this.largeMapMarker) {
+        this.largeMapMarker = L.circleMarker(latLng, {
+          radius: 10,
+          fillColor: '#2563eb',
+          color: '#1d4ed8',
+          weight: 2,
+          fillOpacity: 0.9,
+        }).addTo(this.largeMap);
+      } else {
+        this.largeMapMarker.setLatLng(latLng);
+      }
+    }
+  }
+
+  centerLargeMapOnMarker(): void {
+    if (!this.largeMap || this.newLatitud == null || this.newLongitud == null) return;
+    this.largeMap.setView([this.newLatitud, this.newLongitud], Math.max(this.largeMap.getZoom(), 19));
+  }
+
+  clearMapPoint(): void {
+    this.newLatitud = null;
+    this.newLongitud = null;
+    if (this.addMapMarker) {
+      this.addMapMarker.remove();
+      this.addMapMarker = undefined;
+    }
+    if (this.largeMapMarker) {
+      this.largeMapMarker.remove();
+      this.largeMapMarker = undefined;
+    }
+    if (this.addMap) this.addMap.setView(this.defaultAddMapCenter, 17);
+    if (this.largeMap) this.largeMap.setView(this.defaultAddMapCenter, 18);
+  }
+
+  onInteriorPickerClick(event: MouseEvent): void {
+    const host = this.interiorPicker?.nativeElement;
+    if (!host) return;
+    const rect = host.getBoundingClientRect();
+    const relX = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+    const relY = Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height));
+
+    // Normalize to a 0..1000 floor coordinate space for easier cross-screen usage.
+    this.newPosX = Number((relX * 1000).toFixed(1));
+    this.newPosY = Number((relY * 1000).toFixed(1));
+  }
+
+  interiorMarkerStyle() {
+    if (this.newPosX == null || this.newPosY == null) return null;
+    return {
+      left: `${(this.newPosX / 1000) * 100}%`,
+      top: `${(this.newPosY / 1000) * 100}%`,
+    };
+  }
+
+  setHeightPreset(preset: HeightPreset): void {
+    this.newHeightPreset = preset;
+    const selected = this.heightPresets.find((p) => p.value === preset);
+    if (selected && selected.meters != null) this.newAlturaM = selected.meters;
+  }
+
+  updateAzimuthFromPointer(event: PointerEvent): void {
+    if (event.type === 'pointermove' && event.buttons !== 1) return;
+    const host = event.currentTarget as HTMLElement | null;
+    if (!host) return;
+
+    const rect = host.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const deltaX = event.clientX - centerX;
+    const deltaY = centerY - event.clientY;
+    const angle = (Math.atan2(deltaX, deltaY) * 180) / Math.PI;
+    const normalized = (angle + 360) % 360;
+
+    this.newAzimuth = Math.round(normalized);
+  }
+
+  updatePitchFromPointer(event: PointerEvent): void {
+    if (event.type === 'pointermove' && event.buttons !== 1) return;
+    const host = event.currentTarget as HTMLElement | null;
+    if (!host) return;
+
+    const rect = host.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height * 0.68;
+    const deltaX = event.clientX - centerX;
+    const deltaY = centerY - event.clientY;
+    const angle = (Math.atan2(deltaY, deltaX) * 180) / Math.PI;
+
+    this.newInclinacionAngulo = Math.round(this.clamp(angle, -90, 90));
+  }
+
+  private clamp(value: number, min: number, max: number): number {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  azimuthPreviewTransform(): string {
+    const az = this.newAzimuth ?? 0;
+    const normalized = ((az % 360) + 360) % 360;
+    return `rotate(${normalized - 90}deg)`;
+  }
+
+  pitchPreviewTransform(): string {
+    const pitch = this.clamp(this.newInclinacionAngulo ?? 0, -90, 90);
+    return `rotate(${-pitch}deg)`;
   }
 }

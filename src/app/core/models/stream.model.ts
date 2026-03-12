@@ -53,8 +53,10 @@ export interface RtspSource {
   posicion_x?: number;
   posicion_y?: number;
   azimuth?: number;
+  inclinacion_angulo?: number;
   fov_angulo?: number;
   piso?: number;
+  altura_m?: number;
   created_at: string;
   updated_at: string;
 }
@@ -69,8 +71,10 @@ export interface RtspSourceCreate {
   posicion_x?: number;
   posicion_y?: number;
   azimuth?: number;
+  inclinacion_angulo?: number;
   fov_angulo?: number;
   piso?: number;
+  altura_m?: number;
 }
 
 export interface RtspSourceUpdate {
@@ -83,6 +87,8 @@ export interface RtspSourceUpdate {
   posicion_x?: number;
   posicion_y?: number;
   azimuth?: number;
+  inclinacion_angulo?: number;
   fov_angulo?: number;
   piso?: number;
+  altura_m?: number;
 }
