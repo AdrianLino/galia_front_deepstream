@@ -26,5 +26,9 @@ export const routes: Routes = [
     path: 'map',
     loadComponent: () => import('./pages/map/map').then((m) => m.MapComponent),
   },
+  {
+    path: 'geocercas',
+    loadComponent: () => import('./pages/geocercas/geocercas').then((m) => m.GeocercasComponent),
+  },
   { path: '**', redirectTo: 'dashboard' },
 ];

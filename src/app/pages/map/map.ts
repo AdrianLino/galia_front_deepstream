@@ -157,10 +157,16 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       zoomControl: true,
     });
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: '&copy; Esri',
+      maxZoom: 22,
+    });
+    const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 22,
-    }).addTo(this.map);
+    });
+    street.addTo(this.map);
+    L.control.layers({ 'Calles': street, 'Satélite': satellite }, {}, { position: 'topright' }).addTo(this.map);
   }
 
   private loadCameras(): void {

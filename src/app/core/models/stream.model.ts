@@ -57,6 +57,7 @@ export interface RtspSource {
   fov_angulo?: number;
   piso?: number;
   altura_m?: number;
+  spatial_node_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -75,6 +76,7 @@ export interface RtspSourceCreate {
   fov_angulo?: number;
   piso?: number;
   altura_m?: number;
+  spatial_node_id?: string;
 }
 
 export interface RtspSourceUpdate {
@@ -91,4 +93,5 @@ export interface RtspSourceUpdate {
   fov_angulo?: number;
   piso?: number;
   altura_m?: number;
+  spatial_node_id?: string;
 }

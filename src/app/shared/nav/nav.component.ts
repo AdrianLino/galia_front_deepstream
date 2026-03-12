@@ -47,6 +47,11 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 8V9m0 0L9 7"/></svg>
            Mapa
         </a>
+        <a routerLink="/geocercas" routerLinkActive="bg-orange-600 text-white shadow-md shadow-orange-900/20"
+           class="px-4 py-1.5 rounded-lg text-sm font-semibold text-gray-400 hover:text-white hover:bg-gray-700/50 transition-all flex items-center gap-2">
+           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+           Geocercas
+        </a>
       </div>
 
       <!-- Right Side (User Profile / Actions) -->

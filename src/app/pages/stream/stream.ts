@@ -155,7 +155,9 @@ export class StreamComponent implements OnInit, OnDestroy {
   private largeMapMarker?: L.CircleMarker;
   private readonly defaultAddMapCenter: L.LatLngExpression = [4.6097, -74.0817];
   private readonly satelliteTileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+  private readonly streetTileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
   private readonly satelliteAttribution = 'Tiles © Esri';
+  private readonly streetAttribution = '© OpenStreetMap';
 
   readonly heightPresets: Array<{ value: HeightPreset; label: string; meters: number | null }> = [
     { value: 'basement', label: 'Sotano/Piso inferior (0.0 m)', meters: 0 },
@@ -543,10 +545,10 @@ export class StreamComponent implements OnInit, OnDestroy {
         zoomControl: true,
       });
 
-      L.tileLayer(this.satelliteTileUrl, {
-        attribution: this.satelliteAttribution,
-        maxZoom: 22,
-      }).addTo(this.addMap);
+      const satAdd = L.tileLayer(this.satelliteTileUrl, { attribution: this.satelliteAttribution, maxZoom: 22 });
+      const strAdd = L.tileLayer(this.streetTileUrl, { attribution: this.streetAttribution, maxZoom: 22 });
+      satAdd.addTo(this.addMap);
+      L.control.layers({ 'Satélite': satAdd, 'Calles': strAdd }, {}, { position: 'topright' }).addTo(this.addMap);
 
       this.addMap.on('click', (ev: L.LeafletMouseEvent) => {
         this.newLatitud = Number(ev.latlng.lat.toFixed(6));
@@ -582,10 +584,10 @@ export class StreamComponent implements OnInit, OnDestroy {
         zoomControl: true,
       });
 
-      L.tileLayer(this.satelliteTileUrl, {
-        attribution: this.satelliteAttribution,
-        maxZoom: 22,
-      }).addTo(this.largeMap);
+      const satLarge = L.tileLayer(this.satelliteTileUrl, { attribution: this.satelliteAttribution, maxZoom: 22 });
+      const strLarge = L.tileLayer(this.streetTileUrl, { attribution: this.streetAttribution, maxZoom: 22 });
+      satLarge.addTo(this.largeMap);
+      L.control.layers({ 'Satélite': satLarge, 'Calles': strLarge }, {}, { position: 'topright' }).addTo(this.largeMap);
 
       this.largeMap.on('click', (ev: L.LeafletMouseEvent) => {
         this.newLatitud = Number(ev.latlng.lat.toFixed(6));

@@ -1,0 +1,401 @@
+<!-- ═══════════════════════════════════ GEOCERCAS PAGE ═══════════════════════════════════ -->
+<div class="flex flex-col h-[calc(100vh-4rem)] bg-gray-900 text-white">
+
+  <!-- ── Top bar: Breadcrumb + Actions ────────────────────────────────────────────── -->
+  <div class="flex items-center justify-between px-4 py-3 bg-gray-800/60 border-b border-gray-700/50">
+
+    <!-- Breadcrumb -->
+    <div class="flex items-center gap-1 text-sm">
+      <button (click)="navigateToRoot()"
+              class="px-2 py-1 rounded hover:bg-gray-700/50 transition-colors"
+              [class.text-white]="breadcrumb().length === 0"
+              [class.text-gray-400]="breadcrumb().length > 0">
+        🌐 Raíz
+      </button>
+      @for (node of breadcrumb(); track node.id; let i = $index) {
+        <span class="text-gray-600">›</span>
+        <button (click)="navigateToBreadcrumb(i)"
+                class="px-2 py-1 rounded hover:bg-gray-700/50 transition-colors"
+                [class.text-white]="i === breadcrumb().length - 1"
+                [class.text-gray-400]="i !== breadcrumb().length - 1">
+          {{ tipoIcon(node.tipo) }} {{ node.name }}
+        </button>
+      }
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center gap-2">
+      @if (drawingPolygon()) {
+        <span class="text-xs text-amber-400 animate-pulse mr-2">
+          ✏️ Dibujando polígono ({{ polygonPoints().length }} pts) — click en el mapa
+        </span>
+        <button (click)="undoLastPoint()"
+                class="px-3 py-1.5 text-xs rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors"
+                [disabled]="polygonPoints().length === 0">
+          ↩ Deshacer
+        </button>
+        <button (click)="finishDrawing()"
+                class="px-3 py-1.5 text-xs rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-colors"
+                [disabled]="polygonPoints().length < 3">
+          ✓ Terminar
+        </button>
+        <button (click)="cancelDrawing()"
+                class="px-3 py-1.5 text-xs rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/30 transition-colors">
+          ✕ Cancelar
+        </button>
+      } @else {
+        <button (click)="openCreateForm()"
+                class="px-3 py-1.5 text-xs rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Nuevo nodo
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- ── Main area: Map + Sidebar ─────────────────────────────────────────────────── -->
+  <div class="flex flex-1 overflow-hidden">
+
+    <!-- ── Left: Map ──────────────────────────────────────────────────────────────── -->
+    <div class="flex-1 relative">
+      <div #mapDiv class="w-full h-full" [class.bg-white]="breadcrumb().length > 0"></div>
+
+      <!-- Back button — visible only when inside a node -->
+      @if (breadcrumb().length > 0) {
+        <button (click)="goBack()"
+                class="absolute bottom-4 left-4 z-[1000] flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-900/80 hover:bg-gray-800 border border-gray-600/50 text-white text-xs font-semibold shadow-lg backdrop-blur-sm transition-all">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          Salir de {{ breadcrumb()[breadcrumb().length - 1].name }}
+        </button>
+      }
+
+      <!-- Floor navigator elevator panel — visible when inside a PISO with siblings -->
+      @if (currentFloor() && siblingFloorsDesc().length > 1) {
+        <div class="absolute right-14 top-1/2 -translate-y-1/2 z-[1000] flex flex-col bg-gray-900/85 border border-gray-600/50 rounded-xl overflow-hidden shadow-xl backdrop-blur-sm">
+          <div class="px-3 py-1.5 border-b border-gray-700/50 text-center">
+            <span class="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">🛗 Pisos</span>
+          </div>
+          @for (floor of siblingFloorsDesc(); track floor.id) {
+            <button
+              (click)="navigateToSiblingFloor(floor)"
+              [title]="floor.name"
+              class="px-3 py-2 text-xs transition-colors border-b border-gray-700/30 last:border-0 min-w-[64px] text-center"
+              [class]="floor.id === currentFloor()?.id
+                ? 'bg-amber-500/25 text-amber-300 font-bold'
+                : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'">
+              <span class="block text-[11px] font-bold">
+                @if (floor.piso !== null && floor.piso !== undefined) {
+                  {{ floor.piso === 0 ? 'PB' : (floor.piso > 0 ? 'P' + floor.piso : 'S' + (floor.piso * -1)) }}
+                } @else {
+                  —
+                }
+              </span>
+              <span class="block text-[9px] text-gray-500 truncate max-w-[56px]">{{ floor.name }}</span>
+            </button>
+          }
+        </div>
+      }
+
+      <!-- Error toast -->
+      @if (error()) {
+        <div class="absolute top-3 left-3 right-3 z-[1000] bg-red-600/90 text-white text-xs px-3 py-2 rounded-lg flex items-center justify-between backdrop-blur-sm">
+          <span>{{ error() }}</span>
+          <button (click)="error.set('')" class="ml-2 hover:text-red-200">✕</button>
+        </div>
+      }
+
+      <!-- Loading overlay -->
+      @if (loading()) {
+        <div class="absolute inset-0 bg-gray-900/50 flex items-center justify-center z-[999]">
+          <div class="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      }
+    </div>
+
+    <!-- ── Right: Sidebar ─────────────────────────────────────────────────────────── -->
+    <div class="w-[380px] bg-gray-800/80 border-l border-gray-700/50 flex flex-col overflow-hidden">
+
+      <!-- ── Create form panel ─────────────────────────────────────────────────── -->
+      @if (showCreate()) {
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-bold text-white">Crear nodo espacial</h3>
+            <button (click)="cancelCreate()" class="text-gray-500 hover:text-white text-lg">✕</button>
+          </div>
+
+          <!-- Name -->
+          <div>
+            <label class="text-xs text-gray-400 mb-1 block">Nombre *</label>
+            <input [(ngModel)]="newName"
+                   class="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                   placeholder="Ej: Edificio Central">
+          </div>
+
+          <!-- Tipo -->
+          <div>
+            <label class="text-xs text-gray-400 mb-1 block">Tipo *</label>
+            <div class="grid grid-cols-2 gap-1.5">
+              @for (t of tipos; track t) {
+                <button (click)="setTipo(t)"
+                        class="px-2 py-1.5 text-xs rounded-lg border transition-colors"
+                        [class]="newTipo === t
+                          ? 'bg-blue-600/30 border-blue-500 text-blue-300'
+                          : 'bg-gray-700/30 border-gray-600 text-gray-400 hover:border-gray-500'">
+                  {{ tipoIcon(t) }} {{ tipoLabel(t) }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div>
+            <label class="text-xs text-gray-400 mb-1 block">Descripción</label>
+            <textarea [(ngModel)]="newDescripcion"
+                      class="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 resize-none h-16"
+                      placeholder="Descripción opcional..."></textarea>
+          </div>
+
+          <!-- Polygon drawing -->
+          <div>
+            <label class="text-xs text-gray-400 mb-1 block">Geocerca (polígono)</label>
+            @if (newTipo === 'PISO' && polygonPoints().length >= 3) {
+              <div class="flex items-center gap-2 px-2 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-lg mb-1">
+                <span class="text-amber-400 text-xs">📐 Heredado del piso padre</span>
+                <button (click)="startDrawing()" class="ml-auto text-[10px] text-gray-400 hover:text-white underline">Redibujar</button>
+              </div>
+            } @else if (!drawingPolygon() && polygonPoints().length === 0) {
+              <button (click)="startDrawing()"
+                      class="w-full px-3 py-2 text-xs rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-600/30 hover:bg-emerald-600/30 transition-colors">
+                ✏️ Dibujar polígono en el mapa
+              </button>
+            } @else if (!drawingPolygon() && polygonPoints().length >= 3) {
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-emerald-400">✓ {{ polygonPoints().length }} puntos</span>
+                <button (click)="startDrawing()"
+                        class="text-xs text-amber-400 hover:text-amber-300 underline">Redibujar</button>
+              </div>
+            }
+          </div>
+
+          <!-- Floor number -->
+          @if (newTipo === 'PISO' || newTipo === 'ZONA_INTERNA') {
+            <div>
+              <label class="text-xs text-gray-400 mb-1 block">Número de piso</label>
+              <input [(ngModel)]="newPiso" type="number"
+                     class="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                     placeholder="0 = PB, 1 = Primer piso...">
+            </div>
+          }
+
+          <!-- Center coords -->
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-xs text-gray-400 mb-1 block">Centro lat</label>
+              <input [(ngModel)]="newCentroLat" type="number" step="0.000001"
+                     class="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                     placeholder="19.4326">
+            </div>
+            <div>
+              <label class="text-xs text-gray-400 mb-1 block">Centro lng</label>
+              <input [(ngModel)]="newCentroLng" type="number" step="0.000001"
+                     class="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                     placeholder="-99.1332">
+            </div>
+          </div>
+          <button (click)="setMapClickForCenter()"
+                  class="w-full px-3 py-1.5 text-xs rounded-lg bg-gray-700/50 border border-gray-600 text-gray-400 hover:text-white hover:border-gray-500 transition-colors">
+            📍 Click en mapa para seleccionar centro
+          </button>
+
+          <!-- Zoom level -->
+          <div>
+            <label class="text-xs text-gray-400 mb-1 block">Nivel de zoom (1-22)</label>
+            <input [(ngModel)]="newZoom" type="number" min="1" max="22"
+                   class="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                   placeholder="15">
+          </div>
+
+          <!-- Save button -->
+          <div class="pt-2">
+            <button (click)="saveNode()"
+                    [disabled]="!newName.trim()"
+                    class="w-full px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-semibold transition-colors">
+              Crear nodo
+            </button>
+          </div>
+        </div>
+
+      <!-- ── Detail panel ────────────────────────────────────────────────────── -->
+      } @else if (showDetail() && selectedNode()) {
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-bold text-white">
+              {{ tipoIcon(selectedNode()!.tipo) }} {{ selectedNode()!.name }}
+            </h3>
+            <button (click)="showDetail.set(false)" class="text-gray-500 hover:text-white text-lg">✕</button>
+          </div>
+
+          <!-- Info -->
+          <div class="space-y-1.5 text-xs">
+            <div class="flex justify-between">
+              <span class="text-gray-400">Tipo</span>
+              <span class="text-white">{{ tipoLabel(selectedNode()!.tipo) }}</span>
+            </div>
+            @if (selectedNode()!.descripcion) {
+              <div class="flex justify-between">
+                <span class="text-gray-400">Descripción</span>
+                <span class="text-white text-right max-w-[200px]">{{ selectedNode()!.descripcion }}</span>
+              </div>
+            }
+            @if (selectedNode()!.piso != null) {
+              <div class="flex justify-between">
+                <span class="text-gray-400">Piso</span>
+                <span class="text-white">{{ selectedNode()!.piso }}</span>
+              </div>
+            }
+            <div class="flex justify-between">
+              <span class="text-gray-400">Sub-nodos</span>
+              <span class="text-white">{{ selectedNode()!.children_count }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-400">Cámaras</span>
+              <span class="text-white">{{ selectedNode()!.cameras_count }}</span>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex gap-2 pt-2">
+            <button (click)="navigateToNode(selectedNode()!)"
+                    class="flex-1 px-3 py-2 text-xs rounded-lg bg-blue-600/20 text-blue-400 border border-blue-600/30 hover:bg-blue-600/30 transition-colors">
+              📂 Entrar
+            </button>
+            <button (click)="openAssignCamera(selectedNode()!)"
+                    class="flex-1 px-3 py-2 text-xs rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-600/30 hover:bg-emerald-600/30 transition-colors">
+              📹 Asignar cámara
+            </button>
+          </div>
+          <button (click)="deleteNode(selectedNode()!)"
+                  class="w-full px-3 py-2 text-xs rounded-lg bg-red-600/10 text-red-400 border border-red-600/20 hover:bg-red-600/20 transition-colors">
+            🗑 Eliminar nodo
+          </button>
+        </div>
+
+      <!-- ── Node list (default) ─────────────────────────────────────────────── -->
+      } @else {
+        <div class="flex-1 overflow-y-auto custom-scrollbar">
+          <!-- Header -->
+          <div class="px-4 py-3 border-b border-gray-700/50">
+            <h3 class="text-sm font-bold text-white">
+              @if (currentParentId()) {
+                Contenido
+              } @else {
+                Nodos raíz
+              }
+            </h3>
+            <p class="text-xs text-gray-500 mt-0.5">{{ nodes().length }} nodos</p>
+          </div>
+
+          <!-- Cameras in current node -->
+          @if (cameras().length > 0) {
+            <div class="px-4 py-2 border-b border-gray-700/30">
+              <p class="text-[10px] font-semibold tracking-wider text-gray-500 uppercase mb-1.5">Cámaras ({{ cameras().length }})</p>
+              @for (cam of cameras(); track cam.id) {
+                <div class="flex items-center justify-between py-1.5 group">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span class="text-sm">📹</span>
+                    <span class="text-xs text-gray-300 truncate">{{ cam.name }}</span>
+                  </div>
+                  <button (click)="unassignCamera(cam)"
+                          class="text-[10px] text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                    desasignar
+                  </button>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Child nodes -->
+          @for (node of nodes(); track node.id) {
+            <div class="px-4 py-3 border-b border-gray-700/30 hover:bg-gray-700/20 transition-colors cursor-pointer group"
+                 (click)="selectNode(node)">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <span class="text-lg">{{ tipoIcon(node.tipo) }}</span>
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium text-white truncate">{{ node.name }}</p>
+                    <p class="text-[10px] text-gray-500">
+                      {{ tipoLabel(node.tipo) }}
+                      @if (node.piso != null) { · Piso {{ node.piso }} }
+                    </p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3 shrink-0">
+                  @if (node.children_count > 0) {
+                    <span class="text-[10px] text-gray-500 bg-gray-700/50 px-1.5 py-0.5 rounded">
+                      {{ node.children_count }} sub
+                    </span>
+                  }
+                  @if (node.cameras_count > 0) {
+                    <span class="text-[10px] text-blue-400 bg-blue-600/10 px-1.5 py-0.5 rounded">
+                      {{ node.cameras_count }} 📹
+                    </span>
+                  }
+                  <button (click)="navigateToNode(node); $event.stopPropagation()"
+                          class="text-gray-600 hover:text-white opacity-0 group-hover:opacity-100 transition-all">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                  </button>
+                </div>
+              </div>
+              @if (node.descripcion) {
+                <p class="text-[10px] text-gray-500 mt-1 ml-8 truncate">{{ node.descripcion }}</p>
+              }
+            </div>
+          }
+
+          @if (nodes().length === 0 && !loading()) {
+            <div class="flex flex-col items-center justify-center py-12 text-gray-600">
+              <svg class="w-10 h-10 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 8V9m0 0L9 7"/></svg>
+              <p class="text-sm">Sin nodos</p>
+              <p class="text-xs mt-1">Crea el primer nodo espacial</p>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- ── Camera assignment modal ──────────────────────────────────────────── -->
+      @if (showAssignCamera()) {
+        <div class="absolute inset-0 bg-gray-900/70 z-[2000] flex items-center justify-center backdrop-blur-sm"
+             (click)="showAssignCamera.set(false)">
+          <div class="bg-gray-800 border border-gray-700 rounded-xl w-[340px] max-h-[60vh] flex flex-col shadow-2xl"
+               (click)="$event.stopPropagation()">
+            <div class="px-4 py-3 border-b border-gray-700/50 flex items-center justify-between">
+              <h4 class="text-sm font-bold text-white">
+                Asignar cámara a {{ selectedNodeForCamera()?.name }}
+              </h4>
+              <button (click)="showAssignCamera.set(false)" class="text-gray-500 hover:text-white">✕</button>
+            </div>
+            <div class="overflow-y-auto custom-scrollbar flex-1">
+              @for (cam of unassignedCameras(); track cam.id) {
+                <button (click)="assignCameraToNode(cam)"
+                        class="w-full text-left px-4 py-2.5 border-b border-gray-700/30 hover:bg-gray-700/30 transition-colors group">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-sm text-white">{{ cam.name }}</p>
+                      <p class="text-[10px] text-gray-500 truncate">{{ cam.rtsp_url }}</p>
+                    </div>
+                    <span class="text-xs text-emerald-400 opacity-0 group-hover:opacity-100 transition-all">+ Asignar</span>
+                  </div>
+                </button>
+              }
+              @if (unassignedCameras().length === 0) {
+                <div class="py-8 text-center text-gray-500 text-xs">
+                  Todas las cámaras ya están asignadas
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>
