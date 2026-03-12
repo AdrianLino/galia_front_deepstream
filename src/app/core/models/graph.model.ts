@@ -33,3 +33,9 @@ export interface GraphHealth {
   status: string;
   memgraph: boolean;
 }
+
+export interface RouteEntryWithAnomaly extends RouteEntry {
+  is_anomaly: boolean;
+  prev_camara: string | null;
+  gap_seconds: number | null;
+}

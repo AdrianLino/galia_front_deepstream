@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { ActiveSession, Cooccurrence, GraphHealth, RouteEntry } from '../models/graph.model';
+import { ActiveSession, Cooccurrence, GraphHealth, RouteEntry, RouteEntryWithAnomaly } from '../models/graph.model';
 
 const API = 'http://172.16.83.111:8003';
 
@@ -28,6 +28,13 @@ export class GraphQueryService {
     return this.http.get<Cooccurrence[]>(
       `${API}/cooccurrences/${encodeURIComponent(personName)}`,
       { params: { window_seconds: windowSeconds, hours_back: hoursBack } }
+    );
+  }
+
+  getAnomalies(personName: string, hoursBack = 24): Observable<RouteEntryWithAnomaly[]> {
+    return this.http.get<RouteEntryWithAnomaly[]>(
+      `${API}/anomalies/${encodeURIComponent(personName)}`,
+      { params: { hours_back: hoursBack } }
     );
   }
 }

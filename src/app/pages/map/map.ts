@@ -15,7 +15,7 @@ import * as L from 'leaflet';
 import { GraphQueryService } from '../../core/services/graph-query.service';
 import { StreamService } from '../../core/services/stream.service';
 import { RtspSource } from '../../core/models/stream.model';
-import { ActiveSession, Cooccurrence, RouteEntry } from '../../core/models/graph.model';
+import { ActiveSession, Cooccurrence, RouteEntry, RouteEntryWithAnomaly } from '../../core/models/graph.model';
 
 type MapMode = 'live' | 'forensic';
 
@@ -60,6 +60,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   cameras = signal<RtspSource[]>([]);
   activeSessions = signal<ActiveSession[]>([]);
   route = signal<RouteEntry[]>([]);
+  anomalies = signal<RouteEntryWithAnomaly[]>([]);
   cooccurrences = signal<Cooccurrence[]>([]);
   graphAvailable = signal(false);
   loadingRoute = signal(false);
@@ -68,6 +69,12 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   searchedName = signal('');
   hoursBack = 24;
   windowSeconds = 180;
+
+  // ── Playback ───────────────────────────────────────────────────────────────
+  isPlaying = signal(false);
+  playbackSpeed = signal(1);  // 1× 2× 5× 10×
+  currentStep = signal(-1);   // -1 = not started
+  anomalyCount = signal(0);
 
   // ── Computed ───────────────────────────────────────────────────────────────
   camerasWithCoords = computed(() =>
@@ -90,6 +97,11 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   private fovLines: L.Layer[] = [];
   private pollTimer?: ReturnType<typeof setInterval>;
 
+  // ── Playback internals ─────────────────────────────────────────────────────
+  private movingMarker?: L.Marker;
+  private playTimer?: ReturnType<typeof setTimeout>;
+  private animFrame?: number;
+
   // ── Lifecycle ──────────────────────────────────────────────────────────────
   ngAfterViewInit(): void {
     this.initMap();
@@ -99,6 +111,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.stopPoll();
+    this.stopPlayback();
     this.map?.remove();
   }
 
@@ -277,16 +290,30 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     this.loadingRoute.set(true);
     this.routeError.set('');
     this.route.set([]);
+    this.anomalies.set([]);
     this.cooccurrences.set([]);
+    this.stopPlayback();
+    this.currentStep.set(-1);
     this.clearSessionLayers();
     this.resetMarkerColors();
 
+    // Load route + anomalies + co-occurrences
     this.graphSvc.getRoute(name, this.hoursBack).subscribe({
       next: entries => {
         this.route.set(entries);
         this.renderForensicRoute(entries);
         this.loadingRoute.set(false);
-        // Load co-occurrences in parallel
+
+        // Anomaly detection (enriched route with topology check)
+        this.graphSvc.getAnomalies(name, this.hoursBack).subscribe({
+          next: enriched => {
+            this.anomalies.set(enriched);
+            this.anomalyCount.set(enriched.filter(e => e.is_anomaly).length);
+            this.overlayAnomalyMarkers(enriched);
+          },
+        });
+
+        // Co-occurrences
         this.graphSvc.getCooccurrences(name, this.windowSeconds, this.hoursBack).subscribe({
           next: co => this.cooccurrences.set(co),
         });
@@ -388,6 +415,149 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       next: h => this.graphAvailable.set(h.memgraph),
       error: () => this.graphAvailable.set(false),
     });
+  }
+
+  // ── Anomaly overlay ────────────────────────────────────────────────────────
+  private overlayAnomalyMarkers(entries: RouteEntryWithAnomaly[]): void {
+    for (const entry of entries) {
+      if (!entry.is_anomaly) continue;
+      const cam = this.cameras().find(c => c.name === entry.camara);
+      if (!cam || cam.latitud == null || cam.longitud == null) continue;
+
+      const icon = L.divIcon({
+        html: `<div title="Salto anómalo desde ${entry.prev_camara}"
+                    style="background:#ef4444;color:#fff;border-radius:50%;width:20px;height:20px;
+                           display:flex;align-items:center;justify-content:center;font-weight:900;
+                           font-size:13px;border:2px solid #991b1b;box-shadow:0 0 6px #ef4444">!</div>`,
+        className: '',
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
+      });
+
+      const m = L.marker([cam.latitud, cam.longitud], { icon })
+        .bindPopup(
+          `<b style="color:#ef4444">⚠ Salto anómalo</b><br/>
+           <span style="font-size:11px">
+             <b>${entry.prev_camara}</b> → <b>${entry.camara}</b><br/>
+             Sin adyacencia definida en la topología.<br/>
+             Gap: ${this.formatDuration(entry.gap_seconds)}
+           </span>`
+        )
+        .addTo(this.map!);
+      this.sessionLayers.push(m);
+    }
+  }
+
+  // ── Playback ───────────────────────────────────────────────────────────────
+  togglePlayback(): void {
+    if (this.isPlaying()) {
+      this.pausePlayback();
+    } else {
+      this.startPlayback();
+    }
+  }
+
+  private startPlayback(): void {
+    const route = this.route();
+    if (route.length < 2) return;
+
+    this.isPlaying.set(true);
+    const step = this.currentStep() < 0 || this.currentStep() >= route.length - 1
+      ? 0
+      : this.currentStep();
+    this.playStep(step);
+  }
+
+  private playStep(idx: number): void {
+    const route = this.route();
+    if (idx >= route.length) {
+      this.pausePlayback();
+      return;
+    }
+
+    this.currentStep.set(idx);
+    this.moveMarkerToStep(idx);
+
+    if (idx < route.length - 1) {
+      const gap = route[idx + 1].inicio - route[idx].inicio; // seconds
+      const delay = Math.max(600, Math.min((gap * 1000) / this.playbackSpeed(), 4000));
+      this.playTimer = setTimeout(() => this.playStep(idx + 1), delay);
+    } else {
+      // Reached the end
+      setTimeout(() => this.pausePlayback(), 800);
+    }
+  }
+
+  pausePlayback(): void {
+    this.isPlaying.set(false);
+    if (this.playTimer) clearTimeout(this.playTimer);
+  }
+
+  stopPlayback(): void {
+    this.pausePlayback();
+    this.movingMarker?.remove();
+    this.movingMarker = undefined;
+    this.currentStep.set(-1);
+  }
+
+  stepBack(): void {
+    const next = Math.max(0, this.currentStep() - 1);
+    this.pausePlayback();
+    this.currentStep.set(next);
+    this.moveMarkerToStep(next);
+  }
+
+  stepForward(): void {
+    const next = Math.min(this.route().length - 1, this.currentStep() + 1);
+    this.pausePlayback();
+    this.currentStep.set(next);
+    this.moveMarkerToStep(next);
+  }
+
+  setStep(idx: number): void {
+    this.pausePlayback();
+    this.currentStep.set(idx);
+    this.moveMarkerToStep(idx);
+  }
+
+  private moveMarkerToStep(idx: number): void {
+    const route = this.route();
+    if (idx < 0 || idx >= route.length) return;
+
+    const entry = route[idx];
+    const cam = this.cameras().find(c => c.name === entry.camara);
+    if (!cam || cam.latitud == null || cam.longitud == null) return;
+
+    const latlng: [number, number] = [cam.latitud, cam.longitud];
+
+    if (!this.movingMarker) {
+      const icon = L.divIcon({
+        html: `<div style="background:#22d3ee;border:3px solid #0891b2;border-radius:50%;
+                           width:18px;height:18px;box-shadow:0 0 10px #22d3ee88"></div>`,
+        className: '',
+        iconSize: [18, 18],
+        iconAnchor: [9, 9],
+      });
+      this.movingMarker = L.marker(latlng, { icon, zIndexOffset: 1000 }).addTo(this.map!);
+    }
+
+    // Animate marker smoothly from current to target
+    const from = this.movingMarker.getLatLng();
+    const to = L.latLng(latlng);
+    const startTime = performance.now();
+    const duration = 400;
+
+    if (this.animFrame) cancelAnimationFrame(this.animFrame);
+    const tick = (now: number) => {
+      const t = Math.min((now - startTime) / duration, 1);
+      const lat = from.lat + (to.lat - from.lat) * t;
+      const lng = from.lng + (to.lng - from.lng) * t;
+      this.movingMarker?.setLatLng([lat, lng]);
+      if (t < 1) this.animFrame = requestAnimationFrame(tick);
+    };
+    this.animFrame = requestAnimationFrame(tick);
+
+    this.map?.panTo(latlng, { animate: true, duration: 0.4 });
   }
 
   formatTs(ts: number): string {

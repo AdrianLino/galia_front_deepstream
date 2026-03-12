@@ -174,33 +174,103 @@
       <!-- Results -->
       <div class="flex-1 overflow-y-auto">
 
-        <!-- Route -->
-        <div *ngIf="route().length > 0" class="p-3 border-b border-gray-700">
-          <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-2">
-            Recorrido de "{{ searchedName() }}" · {{ route().length }} paradas
-          </p>
-          <div class="space-y-1.5">
-            <button *ngFor="let entry of route(); let i = index"
-                    (click)="jumpToSession(entry)"
-                    class="w-full text-left bg-gray-900 hover:bg-gray-700 rounded-lg p-2.5
-                           border border-gray-700 hover:border-amber-600/50 transition-colors group">
+        <!-- Route + Playback controls -->
+        <div *ngIf="route().length > 0" class="border-b border-gray-700">
+
+          <!-- Header -->
+          <div class="px-3 pt-3 pb-2 flex items-center justify-between">
+            <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold">
+              Recorrido · {{ route().length }} paradas
+              <span *ngIf="anomalyCount() > 0"
+                    class="ml-2 px-1.5 py-0.5 bg-red-900/60 text-red-400 rounded text-xs font-bold">
+                ⚠ {{ anomalyCount() }} anomalía(s)
+              </span>
+            </p>
+          </div>
+
+          <!-- Playback controls -->
+          <div class="px-3 pb-3 space-y-2">
+            <div class="flex items-center gap-2">
+              <button (click)="stepBack()" [disabled]="currentStep() <= 0"
+                      class="p-1.5 bg-gray-700 hover:bg-gray-600 disabled:opacity-30 rounded transition-colors">
+                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+              </button>
+              <button (click)="togglePlayback()"
+                      class="flex-1 py-1.5 rounded font-semibold text-sm transition-colors flex items-center justify-center gap-1.5"
+                      [class.bg-cyan-600]="!isPlaying()"
+                      [class.hover:bg-cyan-500]="!isPlaying()"
+                      [class.bg-amber-600]="isPlaying()"
+                      [class.hover:bg-amber-500]="isPlaying()">
+                <svg *ngIf="!isPlaying()" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                <svg *ngIf="isPlaying()" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                {{ isPlaying() ? 'Pausar' : (currentStep() < 0 ? 'Reproducir' : 'Continuar') }}
+              </button>
+              <button (click)="stepForward()" [disabled]="currentStep() >= route().length - 1"
+                      class="p-1.5 bg-gray-700 hover:bg-gray-600 disabled:opacity-30 rounded transition-colors">
+                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zm2.5-6 5.5 3.9V8.1z"/><path d="M16 6h2v12h-2z"/></svg>
+              </button>
+              <button (click)="stopPlayback()" *ngIf="currentStep() >= 0"
+                      class="p-1.5 bg-gray-700 hover:bg-gray-600 rounded transition-colors">
+                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+              </button>
+            </div>
+
+            <!-- Speed + step indicator -->
+            <div class="flex items-center gap-2 text-xs">
+              <span class="text-gray-500">Velocidad:</span>
+              <div class="flex gap-1">
+                <button *ngFor="let s of [1, 2, 5, 10]"
+                        (click)="playbackSpeed.set(s)"
+                        [class.bg-cyan-700]="playbackSpeed() === s"
+                        [class.text-white]="playbackSpeed() === s"
+                        [class.bg-gray-700]="playbackSpeed() !== s"
+                        [class.text-gray-400]="playbackSpeed() !== s"
+                        class="px-1.5 py-0.5 rounded font-bold transition-colors">
+                  {{ s }}×
+                </button>
+              </div>
+              <span *ngIf="currentStep() >= 0" class="ml-auto text-gray-500">
+                {{ currentStep() + 1 }}/{{ route().length }}
+              </span>
+            </div>
+
+            <!-- Timeline slider -->
+            <input *ngIf="route().length > 1"
+                   type="range" min="0" [max]="route().length - 1"
+                   [value]="currentStep() < 0 ? 0 : currentStep()"
+                   (input)="setStep(+$any($event.target).value)"
+                   class="w-full h-1.5 rounded accent-cyan-500 cursor-pointer"/>
+          </div>
+
+          <!-- Route list -->
+          <div class="px-3 pb-3 space-y-1.5 max-h-52 overflow-y-auto">
+            <button *ngFor="let entry of anomalies().length ? anomalies() : route(); let i = index"
+                    (click)="setStep(i)"
+                    [class.border-cyan-500]="currentStep() === i"
+                    [class.bg-gray-700]="currentStep() === i"
+                    [class.border-red-800]="$any(entry).is_anomaly && currentStep() !== i"
+                    [class.bg-red-950]="$any(entry).is_anomaly && currentStep() !== i"
+                    [class.border-gray-700]="!$any(entry).is_anomaly && currentStep() !== i"
+                    [class.bg-gray-900]="!$any(entry).is_anomaly && currentStep() !== i"
+                    class="w-full text-left rounded-lg p-2 border transition-colors hover:border-amber-600/50 group">
               <div class="flex items-center gap-2">
-                <div class="w-5 h-5 rounded-full bg-amber-500 text-black text-xs font-black
-                            flex items-center justify-center flex-shrink-0">
-                  {{ i + 1 }}
+                <div class="w-5 h-5 rounded-full text-black text-xs font-black flex items-center justify-center flex-shrink-0"
+                     [class.bg-amber-500]="!$any(entry).is_anomaly"
+                     [class.bg-red-500]="$any(entry).is_anomaly">
+                  <span *ngIf="!$any(entry).is_anomaly">{{ i + 1 }}</span>
+                  <span *ngIf="$any(entry).is_anomaly">!</span>
                 </div>
-                <span class="font-semibold text-sm text-gray-200 truncate group-hover:text-amber-300">
+                <span class="font-semibold text-sm truncate group-hover:text-amber-300"
+                      [class.text-red-300]="$any(entry).is_anomaly"
+                      [class.text-gray-200]="!$any(entry).is_anomaly">
                   {{ entry.camara }}
                 </span>
-                <span *ngIf="!entry.enrollado"
-                      class="ml-auto text-xs text-gray-600 flex-shrink-0">?</span>
               </div>
-              <div class="mt-1 pl-7 text-xs text-gray-500 flex gap-2 flex-wrap">
+              <div class="mt-0.5 pl-7 text-xs text-gray-500 flex gap-2 flex-wrap">
                 <span>{{ formatTs(entry.inicio) }}</span>
-                <span class="text-gray-700">·</span>
-                <span>{{ formatDuration(entry.duracion_s) }}</span>
-                <span class="text-gray-700">·</span>
-                <span>{{ (entry.confianza * 100).toFixed(0) }}%</span>
+                <span *ngIf="$any(entry).gap_seconds != null" class="text-gray-600">
+                  · gap {{ formatDuration($any(entry).gap_seconds) }}
+                </span>
               </div>
             </button>
           </div>
