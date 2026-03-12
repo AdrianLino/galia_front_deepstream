@@ -1,0 +1,280 @@
+<div class="flex h-screen bg-gray-900 text-white overflow-hidden" style="height: calc(100vh - 4rem)">
+
+  <!-- ── Sidebar ────────────────────────────────────────────────────────────── -->
+  <aside class="w-80 flex-shrink-0 bg-gray-800 border-r border-gray-700 flex flex-col overflow-hidden">
+
+    <!-- Header + mode selector -->
+    <div class="p-4 border-b border-gray-700">
+      <div class="flex items-center justify-between mb-3">
+        <h1 class="text-base font-bold text-white flex items-center gap-2">
+          <svg class="w-5 h-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 8V9m0 0L9 7"/>
+          </svg>
+          Mapa de Seguimiento
+        </h1>
+        <!-- Graph status indicator -->
+        <div class="flex items-center gap-1.5 text-xs"
+             [class.text-green-400]="graphAvailable()"
+             [class.text-red-400]="!graphAvailable()">
+          <div class="w-2 h-2 rounded-full"
+               [class.bg-green-400]="graphAvailable()"
+               [class.bg-red-400]="!graphAvailable()"></div>
+          Grafo
+        </div>
+      </div>
+
+      <!-- Mode tabs -->
+      <div class="flex rounded-lg overflow-hidden border border-gray-700 text-sm font-semibold">
+        <button (click)="setMode('live')"
+                [class.bg-green-600]="mode() === 'live'"
+                [class.text-white]="mode() === 'live'"
+                [class.bg-gray-900]="mode() !== 'live'"
+                [class.text-gray-400]="mode() !== 'live'"
+                class="flex-1 py-2 flex items-center justify-center gap-1.5 transition-colors">
+          <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse" *ngIf="mode() === 'live'"></span>
+          En Vivo
+        </button>
+        <button (click)="setMode('forensic')"
+                [class.bg-amber-600]="mode() === 'forensic'"
+                [class.text-white]="mode() === 'forensic'"
+                [class.bg-gray-900]="mode() !== 'forensic'"
+                [class.text-gray-400]="mode() !== 'forensic'"
+                class="flex-1 py-2 flex items-center justify-center gap-1.5 transition-colors">
+          Forense
+        </button>
+      </div>
+    </div>
+
+    <!-- ── LIVE panel ──────────────────────────────────────────────────────── -->
+    <div *ngIf="mode() === 'live'" class="flex flex-col flex-1 overflow-hidden">
+
+      <!-- Stats strip -->
+      <div class="grid grid-cols-2 gap-2 p-3 border-b border-gray-700">
+        <div class="bg-gray-900 rounded-lg p-2 text-center">
+          <div class="text-2xl font-black text-green-400">{{ activeSessions().length }}</div>
+          <div class="text-xs text-gray-400">Sesiones activas</div>
+        </div>
+        <div class="bg-gray-900 rounded-lg p-2 text-center">
+          <div class="text-2xl font-black text-blue-400">{{ camerasWithCoords().length }}</div>
+          <div class="text-xs text-gray-400">Cámaras en mapa</div>
+        </div>
+      </div>
+
+      <!-- Active sessions list -->
+      <div class="flex-1 overflow-y-auto p-3 space-y-2">
+        <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-2">Personas detectadas</p>
+
+        <div *ngIf="activeSessions().length === 0"
+             class="text-center py-8 text-gray-600">
+          <svg class="w-10 h-10 mx-auto mb-2 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"/>
+          </svg>
+          <p class="text-sm">Sin detecciones activas</p>
+          <p class="text-xs mt-1 text-gray-700">Actualizando cada 3s</p>
+        </div>
+
+        <!-- Enrolled persons -->
+        <div *ngFor="let s of activeEnrolled()"
+             class="bg-gray-900 rounded-lg p-2.5 border border-green-800/40">
+          <div class="flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full bg-green-400 flex-shrink-0 animate-pulse"></div>
+            <span class="font-semibold text-sm text-green-300 truncate">{{ s.persona }}</span>
+          </div>
+          <div class="mt-1 text-xs text-gray-400 pl-4">
+            <span class="font-medium text-gray-300">{{ s.camara }}</span>
+            · {{ formatDuration(s.duracion_s) }}
+          </div>
+        </div>
+
+        <!-- Unknown persons -->
+        <div *ngFor="let s of activeUnknown()"
+             class="bg-gray-900 rounded-lg p-2.5 border border-gray-700/50">
+          <div class="flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full bg-gray-400 flex-shrink-0 animate-pulse"></div>
+            <span class="font-semibold text-sm text-gray-400 truncate">Desconocido</span>
+          </div>
+          <div class="mt-1 text-xs text-gray-500 pl-4">
+            {{ s.camara }} · {{ formatDuration(s.duracion_s) }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Cameras without coordinates warning -->
+      <div *ngIf="camerasNoCoords().length > 0"
+           class="p-3 border-t border-gray-700 bg-gray-900/50">
+        <p class="text-xs text-amber-500 font-semibold flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          {{ camerasNoCoords().length }} cámara(s) sin coordenadas
+        </p>
+        <div class="mt-1 pl-5 space-y-0.5">
+          <p *ngFor="let c of camerasNoCoords()" class="text-xs text-gray-600 truncate">{{ c.name }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── FORENSIC panel ──────────────────────────────────────────────────── -->
+    <div *ngIf="mode() === 'forensic'" class="flex flex-col flex-1 overflow-hidden">
+
+      <!-- Search -->
+      <div class="p-3 border-b border-gray-700 space-y-2">
+        <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Buscar persona</p>
+        <div class="flex gap-2">
+          <input [(ngModel)]="searchInput"
+                 (keyup.enter)="searchRoute()"
+                 placeholder="Nombre exacto..."
+                 class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white
+                        placeholder-gray-600 focus:outline-none focus:border-amber-500 transition-colors"/>
+          <button (click)="searchRoute()"
+                  [disabled]="!searchInput.trim() || loadingRoute()"
+                  class="px-3 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 rounded-lg
+                         transition-colors flex items-center justify-center">
+            <svg *ngIf="!loadingRoute()" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <svg *ngIf="loadingRoute()" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Options -->
+        <div class="flex gap-2 text-xs text-gray-400">
+          <label class="flex items-center gap-1">
+            Últimas
+            <select [(ngModel)]="hoursBack"
+                    class="bg-gray-900 border border-gray-700 rounded px-1 py-0.5 text-white">
+              <option [value]="1">1h</option>
+              <option [value]="6">6h</option>
+              <option [value]="24">24h</option>
+              <option [value]="72">72h</option>
+            </select>
+          </label>
+          <label class="flex items-center gap-1 ml-auto">
+            Ventana cómplices
+            <select [(ngModel)]="windowSeconds"
+                    class="bg-gray-900 border border-gray-700 rounded px-1 py-0.5 text-white">
+              <option [value]="60">1m</option>
+              <option [value]="180">3m</option>
+              <option [value]="300">5m</option>
+              <option [value]="600">10m</option>
+            </select>
+          </label>
+        </div>
+
+        <!-- Error -->
+        <p *ngIf="routeError()" class="text-xs text-red-400">{{ routeError() }}</p>
+      </div>
+
+      <!-- Results -->
+      <div class="flex-1 overflow-y-auto">
+
+        <!-- Route -->
+        <div *ngIf="route().length > 0" class="p-3 border-b border-gray-700">
+          <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-2">
+            Recorrido de "{{ searchedName() }}" · {{ route().length }} paradas
+          </p>
+          <div class="space-y-1.5">
+            <button *ngFor="let entry of route(); let i = index"
+                    (click)="jumpToSession(entry)"
+                    class="w-full text-left bg-gray-900 hover:bg-gray-700 rounded-lg p-2.5
+                           border border-gray-700 hover:border-amber-600/50 transition-colors group">
+              <div class="flex items-center gap-2">
+                <div class="w-5 h-5 rounded-full bg-amber-500 text-black text-xs font-black
+                            flex items-center justify-center flex-shrink-0">
+                  {{ i + 1 }}
+                </div>
+                <span class="font-semibold text-sm text-gray-200 truncate group-hover:text-amber-300">
+                  {{ entry.camara }}
+                </span>
+                <span *ngIf="!entry.enrollado"
+                      class="ml-auto text-xs text-gray-600 flex-shrink-0">?</span>
+              </div>
+              <div class="mt-1 pl-7 text-xs text-gray-500 flex gap-2 flex-wrap">
+                <span>{{ formatTs(entry.inicio) }}</span>
+                <span class="text-gray-700">·</span>
+                <span>{{ formatDuration(entry.duracion_s) }}</span>
+                <span class="text-gray-700">·</span>
+                <span>{{ (entry.confianza * 100).toFixed(0) }}%</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Co-occurrences -->
+        <div *ngIf="cooccurrences().length > 0" class="p-3">
+          <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-2 flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/>
+            </svg>
+            Posibles cómplices ({{ cooccurrences().length }})
+          </p>
+          <div class="space-y-1.5">
+            <div *ngFor="let co of cooccurrences()"
+                 class="bg-gray-900 rounded-lg p-2.5 border border-red-900/30">
+              <div class="flex items-center justify-between">
+                <span class="font-semibold text-sm text-red-300 truncate">{{ co.persona }}</span>
+                <span class="text-xs text-gray-500 ml-2 flex-shrink-0">Δ {{ formatDiff(co.diferencia_s) }}</span>
+              </div>
+              <p class="text-xs text-gray-500 mt-0.5">{{ co.camara }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty state -->
+        <div *ngIf="route().length === 0 && !loadingRoute() && !routeError() && !searchedName()"
+             class="py-10 text-center text-gray-600 px-4">
+          <svg class="w-10 h-10 mx-auto mb-2 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 8V9m0 0L9 7"/>
+          </svg>
+          <p class="text-sm">Busca una persona para ver su recorrido</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Map canvas ──────────────────────────────────────────────────────────── -->
+  <div class="flex-1 relative">
+    <div #mapDiv class="w-full h-full"></div>
+
+    <!-- Graph unavailable overlay (only in forensic) -->
+    <div *ngIf="!graphAvailable() && mode() === 'forensic'"
+         class="absolute inset-0 bg-gray-900/70 backdrop-blur-sm flex items-center justify-center z-10 pointer-events-none">
+      <div class="text-center">
+        <svg class="w-10 h-10 text-red-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <p class="text-white font-semibold">Graph Query Service no disponible</p>
+        <p class="text-gray-400 text-sm mt-1">Inicia el servicio en el puerto 8003</p>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="absolute bottom-4 right-4 bg-gray-900/90 backdrop-blur border border-gray-700 rounded-lg p-3 text-xs z-10 space-y-1.5">
+      <div class="flex items-center gap-2">
+        <div class="w-3 h-3 rounded-full bg-blue-500 border-2 border-blue-700"></div>
+        <span class="text-gray-400">Cámara registrada</span>
+      </div>
+      <div class="flex items-center gap-2" *ngIf="mode() === 'live'">
+        <div class="w-3 h-3 rounded-full bg-green-500 border-2 border-green-700"></div>
+        <span class="text-gray-400">Persona detectada</span>
+      </div>
+      <div class="flex items-center gap-2" *ngIf="mode() === 'forensic'">
+        <div class="w-3 h-3 rounded-full bg-amber-500 border-2 border-amber-700"></div>
+        <span class="text-gray-400">Parada del recorrido</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="w-4 border-t-2 border-dashed border-blue-400"></div>
+        <span class="text-gray-400">Dirección FOV</span>
+      </div>
+    </div>
+  </div>
+</div>

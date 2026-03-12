@@ -22,5 +22,9 @@ export const routes: Routes = [
     path: 'video',
     loadComponent: () => import('./pages/video/video').then((m) => m.VideoComponent),
   },
+  {
+    path: 'map',
+    loadComponent: () => import('./pages/map/map').then((m) => m.MapComponent),
+  },
   { path: '**', redirectTo: 'dashboard' },
 ];

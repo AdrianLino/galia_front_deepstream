@@ -47,6 +47,14 @@ export interface RtspSource {
   rtsp_url: string;
   observation?: string;
   group_name?: string;
+  // Spatial positioning (Fase 1)
+  latitud?: number;
+  longitud?: number;
+  posicion_x?: number;
+  posicion_y?: number;
+  azimuth?: number;
+  fov_angulo?: number;
+  piso?: number;
   created_at: string;
   updated_at: string;
 }
@@ -56,6 +64,13 @@ export interface RtspSourceCreate {
   rtsp_url: string;
   observation?: string;
   group_name?: string;
+  latitud?: number;
+  longitud?: number;
+  posicion_x?: number;
+  posicion_y?: number;
+  azimuth?: number;
+  fov_angulo?: number;
+  piso?: number;
 }
 
 export interface RtspSourceUpdate {
@@ -63,4 +78,11 @@ export interface RtspSourceUpdate {
   rtsp_url?: string;
   observation?: string;
   group_name?: string;
+  latitud?: number;
+  longitud?: number;
+  posicion_x?: number;
+  posicion_y?: number;
+  azimuth?: number;
+  fov_angulo?: number;
+  piso?: number;
 }
