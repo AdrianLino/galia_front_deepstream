@@ -10,7 +10,9 @@ import {
   RenameResponse,
 } from '../models/face.model';
 
-const API = 'http://172.16.83.111:8000/api/v1/faces';
+import { environment } from '../../../environments/environment';
+
+const API = `${environment.apiV1}/faces`;
 
 @Injectable({ providedIn: 'root' })
 export class FacesService {

@@ -168,7 +168,13 @@ export class FacesComponent implements OnInit, OnDestroy {
   // ── Register ────────────────────────────────────────────────────────────────
 
   onRegisterFile(e: Event) {
-    this.registerFile = (e.target as HTMLInputElement).files?.[0] ?? null;
+    const file = (e.target as HTMLInputElement).files?.[0] ?? null;
+    this.registerFile = file;
+    if (file) {
+      const fileName = file.name;
+      const lastDotIndex = fileName.lastIndexOf('.');
+      this.registerName = lastDotIndex > 0 ? fileName.substring(0, lastDotIndex) : fileName;
+    }
   }
 
   register() {

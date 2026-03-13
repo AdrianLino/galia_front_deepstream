@@ -10,7 +10,9 @@ import {
 } from '../models/spatial.model';
 import { RtspSource } from '../models/stream.model';
 
-const API = 'http://172.16.83.111:8000/api/v1';
+import { environment } from '../../../environments/environment';
+
+const API = environment.apiV1;
 
 @Injectable({ providedIn: 'root' })
 export class SpatialService {

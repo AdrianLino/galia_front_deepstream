@@ -3,7 +3,9 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ActiveSession, Cooccurrence, GraphHealth, RouteEntry, RouteEntryWithAnomaly } from '../models/graph.model';
 
-const API = 'http://172.16.83.111:8003';
+import { environment } from '../../../environments/environment';
+
+const API = environment.graphApi;
 
 @Injectable({ providedIn: 'root' })
 export class GraphQueryService {
