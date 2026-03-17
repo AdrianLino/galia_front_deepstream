@@ -685,10 +685,10 @@
         <!-- Stream Image Container flex-1 to center perfectly -->
         <div class="flex-1 w-full h-full flex items-center justify-center p-2 relative">
           @if (viewMode() === 'mosaic') {
-          <img [src]="fullMosaicUrl()" (error)="onImgError()" alt="Mosaico completo" class="w-full h-full object-contain rounded-lg drop-shadow-[0_0_20px_rgba(0,0,0,0.5)]" />
+          <img [src]="fullMosaicUrl()" (error)="onImgError()" (click)="onMosaicClick($event)" alt="Mosaico completo" class="w-full h-full object-contain rounded-lg drop-shadow-[0_0_20px_rgba(0,0,0,0.5)] cursor-pointer" />
           }
           @if (viewMode() === 'single') {
-          <img [src]="singleCameraUrl()" (error)="onImgError()" alt="Cámara {{ selectedCamera() + 1 }}" class="w-full h-full object-contain rounded-lg drop-shadow-[0_0_20px_rgba(0,0,0,0.5)]" />
+          <img [src]="singleCameraUrl()" (error)="onImgError()" (click)="goMosaic()" alt="Cámara {{ selectedCamera() + 1 }}" class="w-full h-full object-contain rounded-lg drop-shadow-[0_0_20px_rgba(0,0,0,0.5)] cursor-pointer" />
           }
         </div>
       } @else {

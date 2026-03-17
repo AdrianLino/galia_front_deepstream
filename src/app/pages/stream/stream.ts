@@ -301,6 +301,48 @@ export class StreamComponent implements OnInit, OnDestroy {
     this.selectedCamera.update((c) => (c - 1 + total) % total);
   }
 
+  /** Click on the mosaic image to jump to a single camera */
+  onMosaicClick(event: MouseEvent) {
+    const img = event.target as HTMLImageElement;
+    if (!img) return;
+    const total = this.cameraIndices().length;
+    if (total <= 1) return;
+
+    const rect = img.getBoundingClientRect();
+    const natW = img.naturalWidth || 1;
+    const natH = img.naturalHeight || 1;
+    const scale = Math.min(rect.width / natW, rect.height / natH);
+    const renderedW = natW * scale;
+    const renderedH = natH * scale;
+    const offsetX = (rect.width - renderedW) / 2;
+    const offsetY = (rect.height - renderedH) / 2;
+
+    const x = event.clientX - rect.left - offsetX;
+    const y = event.clientY - rect.top - offsetY;
+    if (x < 0 || y < 0 || x > renderedW || y > renderedH) return;
+
+    const [rows, cols] = this._calcGrid(total);
+    const col = Math.floor((x / renderedW) * cols);
+    const row = Math.floor((y / renderedH) * rows);
+    const index = row * cols + col;
+    if (index >= 0 && index < total) {
+      this.goSingle(index);
+    }
+  }
+
+  private _calcGrid(n: number): [number, number] {
+    if (n <= 1) return [1, 1];
+    if (n <= 2) return [1, 2];
+    if (n <= 4) return [2, 2];
+    if (n <= 6) return [2, 3];
+    if (n <= 9) return [3, 3];
+    if (n <= 12) return [3, 4];
+    if (n <= 16) return [4, 4];
+    const rows = Math.ceil(Math.sqrt(n));
+    const cols = Math.ceil(n / rows);
+    return [rows, cols];
+  }
+
   /**
    * Called from (error) on any <img>. Waits 1.5 s then increments streamRevision
    * so all cameras get a fresh src and retry the connection.
