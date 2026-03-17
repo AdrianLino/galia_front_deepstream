@@ -14,10 +14,12 @@ import * as L from 'leaflet';
 
 import { GraphQueryService } from '../../core/services/graph-query.service';
 import { StreamService } from '../../core/services/stream.service';
+import { FacesService } from '../../core/services/faces.service';
 import { RtspSource } from '../../core/models/stream.model';
-import { ActiveSession, Cooccurrence, RouteEntry, RouteEntryWithAnomaly } from '../../core/models/graph.model';
+import { ActiveSession, Cooccurrence, RouteEntry, RouteEntryWithAnomaly, TrackingResult } from '../../core/models/graph.model';
+import { Person } from '../../core/models/face.model';
 
-type MapMode = 'live' | 'forensic';
+type MapMode = 'live' | 'forensic' | 'tracking';
 
 @Component({
   selector: 'app-map',
@@ -54,6 +56,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
 
   private graphSvc = inject(GraphQueryService);
   private streamSvc = inject(StreamService);
+  private facesSvc = inject(FacesService);
 
   // ── State ──────────────────────────────────────────────────────────────────
   mode = signal<MapMode>('live');
@@ -69,6 +72,13 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   searchedName = signal('');
   hoursBack = 24;
   windowSeconds = 180;
+
+  // ── Tracking ──────────────────────────────────────────────────────────────
+  enrolledPersons = signal<Person[]>([]);
+  trackedPerson = signal<Person | null>(null);
+  trackingResult = signal<TrackingResult | null>(null);
+  trackingFilter = '';
+  loadingPersons = signal(false);
 
   // ── Playback ───────────────────────────────────────────────────────────────
   isPlaying = signal(false);
@@ -123,6 +133,20 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   activeUnknown = computed(() =>
     this.activeSessions().filter(s => !s.enrollado)
   );
+  filteredPersons = computed(() => {
+    const f = this.trackingFilter.toLowerCase().trim();
+    const list = this.enrolledPersons();
+    if (!f) return list;
+    return list.filter(p => p.name.toLowerCase().includes(f));
+  });
+  trackingLiveCameras = computed(() => {
+    const r = this.trackingResult();
+    return r ? r.live.map(c => c.camara) : [];
+  });
+  trackingRecentCameras = computed(() => {
+    const r = this.trackingResult();
+    return r ? r.recent.map(c => c.camara) : [];
+  });
 
   // ── Leaflet internals ──────────────────────────────────────────────────────
   private map?: L.Map;
@@ -259,6 +283,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     this.resetMarkerColors();
     this.mode.set(m);
     if (m === 'live') this.startLive();
+    if (m === 'tracking') this.loadEnrolledPersons();
   }
 
   // ── LIVE MODE ──────────────────────────────────────────────────────────────
@@ -427,6 +452,121 @@ export class MapComponent implements AfterViewInit, OnDestroy {
 
   jumpToSession(entry: RouteEntry): void {
     const cam = this.cameras().find(c => c.name === entry.camara);
+    if (!cam || cam.latitud == null || cam.longitud == null) return;
+    this.map?.setView([cam.latitud, cam.longitud], 18, { animate: true });
+  }
+
+  // ── TRACKING MODE ──────────────────────────────────────────────────────────
+  private loadEnrolledPersons(): void {
+    this.loadingPersons.set(true);
+    this.facesSvc.listPersons().subscribe({
+      next: res => {
+        this.enrolledPersons.set(res.persons);
+        this.loadingPersons.set(false);
+      },
+      error: () => this.loadingPersons.set(false),
+    });
+  }
+
+  selectPersonToTrack(person: Person): void {
+    this.trackedPerson.set(person);
+    this.trackingResult.set(null);
+    this.clearSessionLayers();
+    this.resetMarkerColors();
+    this.startTracking();
+  }
+
+  stopTracking(): void {
+    this.stopPoll();
+    this.trackedPerson.set(null);
+    this.trackingResult.set(null);
+    this.clearSessionLayers();
+    this.resetMarkerColors();
+  }
+
+  private startTracking(): void {
+    this.pollTracking();
+    this.pollTimer = setInterval(() => this.pollTracking(), 3000);
+  }
+
+  private pollTracking(): void {
+    const person = this.trackedPerson();
+    if (!person) return;
+    this.graphSvc.getTracking(person.name).subscribe({
+      next: result => {
+        this.trackingResult.set(result);
+        this.renderTracking(result);
+        this.graphAvailable.set(true);
+      },
+      error: () => this.graphAvailable.set(false),
+    });
+  }
+
+  private renderTracking(result: TrackingResult): void {
+    this.clearSessionLayers();
+    this.resetMarkerColors();
+
+    // 1) Render LIVE cameras (green — person is here right now)
+    for (const entry of result.live) {
+      const cam = this.cameras().find(c => c.name === entry.camara);
+      if (!cam || cam.latitud == null || cam.longitud == null) continue;
+      const marker = this.cameraMarkers.get(cam.id);
+      if (marker) marker.setStyle({ fillColor: '#22c55e', color: '#15803d' });
+
+      // Pulse
+      const pulse = L.circleMarker([cam.latitud, cam.longitud], {
+        radius: 22,
+        fillColor: '#22c55e',
+        color: '#22c55e',
+        weight: 1,
+        fillOpacity: 0.15,
+      }).addTo(this.map!);
+      this.sessionLayers.push(pulse);
+
+      // Label
+      const conf = entry.confianza != null ? ` ${(entry.confianza * 100).toFixed(0)}%` : '';
+      const icon = L.divIcon({
+        html: `<div style="background:rgba(34,197,94,0.92);color:#000;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700;white-space:nowrap">EN VIVO${conf}</div>`,
+        className: '',
+        iconAnchor: [0, 30],
+      });
+      const lbl = L.marker([cam.latitud, cam.longitud], { icon }).addTo(this.map!);
+      this.sessionLayers.push(lbl);
+    }
+
+    // 2) Render RECENT cameras (amber — last seen, sorted by confidence)
+    for (const entry of result.recent) {
+      const cam = this.cameras().find(c => c.name === entry.camara);
+      if (!cam || cam.latitud == null || cam.longitud == null) continue;
+      const marker = this.cameraMarkers.get(cam.id);
+      if (marker) marker.setStyle({ fillColor: '#f59e0b', color: '#d97706' });
+
+      const conf = entry.confianza != null ? `${(entry.confianza * 100).toFixed(0)}%` : '';
+      const icon = L.divIcon({
+        html: `<div style="background:rgba(245,158,11,0.88);color:#000;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700;white-space:nowrap">${conf} · ${this.formatTs(entry.fin ?? entry.inicio)}</div>`,
+        className: '',
+        iconAnchor: [0, 30],
+      });
+      const lbl = L.marker([cam.latitud, cam.longitud], { icon }).addTo(this.map!);
+      this.sessionLayers.push(lbl);
+    }
+
+    // Auto-center on the best camera: live first, then recent
+    const bestCamName = result.live[0]?.camara ?? result.recent[0]?.camara;
+    if (bestCamName) {
+      const cam = this.cameras().find(c => c.name === bestCamName);
+      if (cam?.latitud != null && cam?.longitud != null) {
+        this.map?.panTo([cam.latitud, cam.longitud], { animate: true, duration: 0.5 });
+      }
+    }
+  }
+
+  personPhotoUrl(person: Person): string {
+    return this.facesSvc.photoUrl(person.id);
+  }
+
+  jumpToCamera(cameraName: string): void {
+    const cam = this.cameras().find(c => c.name === cameraName);
     if (!cam || cam.latitud == null || cam.longitud == null) return;
     this.map?.setView([cam.latitud, cam.longitud], 18, { animate: true });
   }

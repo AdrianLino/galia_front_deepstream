@@ -39,3 +39,19 @@ export interface RouteEntryWithAnomaly extends RouteEntry {
   prev_camara: string | null;
   gap_seconds: number | null;
 }
+
+export interface TrackingCamera {
+  camara: string;
+  rtsp_url: string;
+  track_id?: number;
+  inicio: number;
+  fin?: number | null;
+  duracion_s: number | null;
+  confianza: number;
+}
+
+export interface TrackingResult {
+  persona: string;
+  live: TrackingCamera[];
+  recent: TrackingCamera[];
+}

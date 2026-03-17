@@ -35,6 +35,15 @@
           <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse" *ngIf="mode() === 'live'"></span>
           En Vivo
         </button>
+        <button (click)="setMode('tracking')"
+                [class.bg-cyan-600]="mode() === 'tracking'"
+                [class.text-white]="mode() === 'tracking'"
+                [class.bg-gray-900]="mode() !== 'tracking'"
+                [class.text-gray-400]="mode() !== 'tracking'"
+                class="flex-1 py-2 flex items-center justify-center gap-1.5 transition-colors">
+          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" *ngIf="mode() === 'tracking' && trackedPerson()"></span>
+          Seguimiento
+        </button>
         <button (click)="setMode('forensic')"
                 [class.bg-amber-600]="mode() === 'forensic'"
                 [class.text-white]="mode() === 'forensic'"
@@ -113,6 +122,145 @@
         </p>
         <div class="mt-1 pl-5 space-y-0.5">
           <p *ngFor="let c of camerasNoCoords()" class="text-xs text-gray-600 truncate">{{ c.name }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TRACKING panel ──────────────────────────────────────────────────── -->
+    <div *ngIf="mode() === 'tracking'" class="flex flex-col flex-1 overflow-hidden">
+
+      <!-- Active tracking header -->
+      <div *ngIf="trackedPerson()" class="p-3 border-b border-gray-700 bg-cyan-950/30">
+        <div class="flex items-center gap-3">
+          <img [src]="personPhotoUrl(trackedPerson()!)"
+               class="w-10 h-10 rounded-full object-cover border-2 border-cyan-500"
+               (error)="$any($event.target).style.display='none'" />
+          <div class="flex-1 min-w-0">
+            <p class="font-bold text-sm text-cyan-300 truncate">{{ trackedPerson()!.name }}</p>
+            <p class="text-xs text-gray-400">
+              <span *ngIf="trackingResult()?.live?.length" class="text-green-400">
+                En vivo en {{ trackingResult()!.live.length }} cámara(s)
+              </span>
+              <span *ngIf="!trackingResult()?.live?.length && trackingResult()?.recent?.length" class="text-amber-400">
+                Última vez en {{ trackingResult()!.recent.length }} cámara(s)
+              </span>
+              <span *ngIf="!trackingResult()?.live?.length && !trackingResult()?.recent?.length" class="text-gray-500">
+                Buscando...
+              </span>
+            </p>
+          </div>
+          <button (click)="stopTracking()"
+                  class="p-1.5 bg-gray-700 hover:bg-gray-600 rounded transition-colors text-gray-400 hover:text-white"
+                  title="Dejar de seguir">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tracking results -->
+      <div *ngIf="trackedPerson() && trackingResult()" class="flex-1 overflow-y-auto p-3 space-y-3">
+
+        <!-- Live cameras -->
+        <div *ngIf="trackingResult()!.live.length > 0">
+          <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-2 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+            En vivo ahora
+          </p>
+          <div class="space-y-1.5">
+            <button *ngFor="let cam of trackingResult()!.live"
+                    (click)="jumpToCamera(cam.camara)"
+                    class="w-full text-left bg-gray-900 rounded-lg p-2.5 border border-green-800/40 hover:border-green-500/60 transition-colors">
+              <div class="flex items-center gap-2">
+                <div class="w-2.5 h-2.5 rounded-full bg-green-400 flex-shrink-0 animate-pulse"></div>
+                <span class="font-semibold text-sm text-green-300 truncate">{{ cam.camara }}</span>
+                <span *ngIf="cam.confianza != null" class="ml-auto text-xs text-green-500 font-bold">
+                  {{ (cam.confianza * 100).toFixed(0) }}%
+                </span>
+              </div>
+              <div class="mt-1 text-xs text-gray-500 pl-5">
+                Desde {{ formatTs(cam.inicio) }} · {{ formatDuration(cam.duracion_s) }}
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Recent cameras -->
+        <div *ngIf="trackingResult()!.recent.length > 0">
+          <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-2 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+            Visto recientemente
+          </p>
+          <div class="space-y-1.5">
+            <button *ngFor="let cam of trackingResult()!.recent"
+                    (click)="jumpToCamera(cam.camara)"
+                    class="w-full text-left bg-gray-900 rounded-lg p-2.5 border border-amber-800/30 hover:border-amber-500/50 transition-colors">
+              <div class="flex items-center gap-2">
+                <div class="w-2.5 h-2.5 rounded-full bg-amber-400 flex-shrink-0"></div>
+                <span class="font-semibold text-sm text-amber-300 truncate">{{ cam.camara }}</span>
+                <span *ngIf="cam.confianza != null" class="ml-auto text-xs text-amber-500 font-bold">
+                  {{ (cam.confianza * 100).toFixed(0) }}%
+                </span>
+              </div>
+              <div class="mt-1 text-xs text-gray-500 pl-5">
+                {{ formatTs(cam.fin ?? cam.inicio) }}
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Empty tracking state -->
+        <div *ngIf="trackingResult()!.live.length === 0 && trackingResult()!.recent.length === 0"
+             class="text-center py-8 text-gray-600">
+          <svg class="w-10 h-10 mx-auto mb-2 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"/>
+          </svg>
+          <p class="text-sm">No se detecta a {{ trackedPerson()!.name }}</p>
+          <p class="text-xs mt-1 text-gray-700">Buscando cada 3s...</p>
+        </div>
+      </div>
+
+      <!-- Person list (when no person selected) -->
+      <div *ngIf="!trackedPerson()" class="flex flex-col flex-1 overflow-hidden">
+        <div class="p-3 border-b border-gray-700">
+          <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-2">Seleccionar persona</p>
+          <input [(ngModel)]="trackingFilter"
+                 placeholder="Filtrar por nombre..."
+                 class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white
+                        placeholder-gray-600 focus:outline-none focus:border-cyan-500 transition-colors"/>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-3 space-y-1.5">
+          <div *ngIf="loadingPersons()" class="text-center py-8 text-gray-500">
+            <svg class="w-6 h-6 mx-auto animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            <p class="text-xs mt-2">Cargando personas...</p>
+          </div>
+
+          <div *ngIf="!loadingPersons() && filteredPersons().length === 0"
+               class="text-center py-8 text-gray-600">
+            <p class="text-sm">No hay personas registradas</p>
+          </div>
+
+          <button *ngFor="let person of filteredPersons()"
+                  (click)="selectPersonToTrack(person)"
+                  class="w-full text-left bg-gray-900 rounded-lg p-2.5 border border-gray-700
+                         hover:border-cyan-600/50 transition-colors flex items-center gap-3 group">
+            <img [src]="personPhotoUrl(person)"
+                 class="w-9 h-9 rounded-full object-cover border-2 border-gray-600 group-hover:border-cyan-500 transition-colors"
+                 (error)="$any($event.target).src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%236b7280%22><path d=%22M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z%22/></svg>'" />
+            <div class="flex-1 min-w-0">
+              <p class="font-semibold text-sm text-gray-200 truncate group-hover:text-cyan-300 transition-colors">{{ person.name }}</p>
+              <p class="text-xs text-gray-600">{{ person.embedding_count }} embedding(s)</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-600 group-hover:text-cyan-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+          </button>
         </div>
       </div>
     </div>
@@ -410,7 +558,7 @@
           <div class="w-3 h-3 rounded-full bg-blue-500"></div>
           <span>Cámara</span>
         </div>
-        <div class="flex items-center gap-1.5" *ngIf="mode() === 'live'">
+        <div class="flex items-center gap-1.5" *ngIf="mode() === 'live' || mode() === 'tracking'">
           <div class="w-3 h-3 rounded-full bg-green-500"></div>
           <span>Activa</span>
         </div>
@@ -426,8 +574,8 @@
       </div>
     </div>
 
-    <!-- Graph unavailable overlay (only in forensic) -->
-    <div *ngIf="!graphAvailable() && mode() === 'forensic'"
+    <!-- Graph unavailable overlay (forensic + tracking) -->
+    <div *ngIf="!graphAvailable() && (mode() === 'forensic' || mode() === 'tracking')"
          class="absolute inset-0 bg-gray-900/70 backdrop-blur-sm flex items-center justify-center z-10 pointer-events-none">
       <div class="text-center">
         <svg class="w-10 h-10 text-red-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -445,13 +593,17 @@
         <div class="w-3 h-3 rounded-full bg-blue-500 border-2 border-blue-700"></div>
         <span class="text-gray-400">Cámara registrada</span>
       </div>
-      <div class="flex items-center gap-2" *ngIf="mode() === 'live'">
+      <div class="flex items-center gap-2" *ngIf="mode() === 'live' || mode() === 'tracking'">
         <div class="w-3 h-3 rounded-full bg-green-500 border-2 border-green-700"></div>
         <span class="text-gray-400">Persona detectada</span>
       </div>
       <div class="flex items-center gap-2" *ngIf="mode() === 'forensic'">
         <div class="w-3 h-3 rounded-full bg-amber-500 border-2 border-amber-700"></div>
         <span class="text-gray-400">Parada del recorrido</span>
+      </div>
+      <div class="flex items-center gap-2" *ngIf="mode() === 'tracking'">
+        <div class="w-3 h-3 rounded-full bg-amber-500 border-2 border-amber-700"></div>
+        <span class="text-gray-400">Visto recientemente</span>
       </div>
       <div class="flex items-center gap-2">
         <div class="w-4 border-t-2 border-dashed border-blue-400"></div>

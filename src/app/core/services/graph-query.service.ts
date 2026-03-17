@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { ActiveSession, Cooccurrence, GraphHealth, RouteEntry, RouteEntryWithAnomaly } from '../models/graph.model';
+import { ActiveSession, Cooccurrence, GraphHealth, RouteEntry, RouteEntryWithAnomaly, TrackingResult } from '../models/graph.model';
 
 import { environment } from '../../../environments/environment';
 
@@ -37,6 +37,13 @@ export class GraphQueryService {
     return this.http.get<RouteEntryWithAnomaly[]>(
       `${API}/anomalies/${encodeURIComponent(personName)}`,
       { params: { hours_back: hoursBack } }
+    );
+  }
+
+  getTracking(personName: string, recentMinutes = 10): Observable<TrackingResult> {
+    return this.http.get<TrackingResult>(
+      `${API}/track/${encodeURIComponent(personName)}`,
+      { params: { recent_minutes: recentMinutes } }
     );
   }
 }
