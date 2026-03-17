@@ -1,4 +1,5 @@
 import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
+import { lastValueFrom } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FacesService } from '../../core/services/faces.service';
@@ -72,10 +73,13 @@ export class FacesComponent implements OnInit, OnDestroy {
 
   // Register
   registerName = '';
-  registerFile: File | null = null;
+  registerFiles: File[] = [];
+  isDragging = signal(false);
   registerLoading = signal(false);
   registerMsg = signal<string | null>(null);
   registerError = signal<string | null>(null);
+  batchProgress = signal<number>(0);
+  batchTotal = signal<number>(0);
 
   // Identify
   identifyFile: File | null = null;
@@ -167,31 +171,113 @@ export class FacesComponent implements OnInit, OnDestroy {
 
   // ── Register ────────────────────────────────────────────────────────────────
 
-  onRegisterFile(e: Event) {
-    const file = (e.target as HTMLInputElement).files?.[0] ?? null;
-    this.registerFile = file;
-    if (file) {
-      const fileName = file.name;
-      const lastDotIndex = fileName.lastIndexOf('.');
-      this.registerName = lastDotIndex > 0 ? fileName.substring(0, lastDotIndex) : fileName;
+  onDragOver(e: DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.isDragging.set(true);
+  }
+
+  onDragLeave(e: DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.isDragging.set(false);
+  }
+
+  onDrop(e: DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.isDragging.set(false);
+    
+    if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+      this.handleFiles(Array.from(e.dataTransfer.files));
     }
   }
 
-  register() {
-    if (!this.registerName.trim() || !this.registerFile) return;
+  onRegisterFile(e: Event) {
+    const input = e.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) {
+      this.registerFiles = [];
+      return;
+    }
+    this.handleFiles(Array.from(input.files));
+  }
+
+  private handleFiles(files: File[]) {
+    // Filter only images if needed: files.filter(f => f.type.startsWith('image/'))
+    this.registerFiles = files;
+    
+    if (this.registerFiles.length === 1 && !this.registerName.trim()) {
+      const fileName = this.registerFiles[0].name;
+      const lastDotIndex = fileName.lastIndexOf('.');
+      this.registerName = lastDotIndex > 0 ? fileName.substring(0, lastDotIndex) : fileName;
+    } else if (this.registerFiles.length > 1) {
+      this.registerName = ''; // Limpiar si es batch
+    }
+  }
+
+  async register() {
+    if (this.registerFiles.length === 0) return;
+    if (this.registerFiles.length === 1 && !this.registerName.trim()) return;
+
     this.registerLoading.set(true);
     this.registerMsg.set(null);
     this.registerError.set(null);
-    this.svc.register(this.registerName.trim(), this.registerFile).subscribe({
-      next: (res) => {
-        this.registerMsg.set(`"${res.name}" registrado. Score detección: ${res.detection_score}`);
-        this.registerLoading.set(false);
-        this.registerName = '';
-        this.registerFile = null;
-        this.loadPersons();
-      },
-      error: (err) => { this.registerError.set(err?.error?.detail ?? 'Error al registrar.'); this.registerLoading.set(false); },
-    });
+
+    // Si es un solo archivo
+    if (this.registerFiles.length === 1) {
+      this.svc.register(this.registerName.trim(), this.registerFiles[0]).subscribe({
+        next: (res) => {
+          this.registerMsg.set(`"${res.name}" registrado. Score detección: ${res.detection_score}`);
+          this.registerLoading.set(false);
+          this.registerName = '';
+          this.registerFiles = [];
+          this.loadPersons();
+        },
+        error: (err) => { this.registerError.set(err?.error?.detail ?? 'Error al registrar.'); this.registerLoading.set(false); },
+      });
+      return;
+    }
+
+    // Si son múltiples archivos (Batch upload)
+    this.batchTotal.set(this.registerFiles.length);
+    this.batchProgress.set(0);
+    
+    let successCount = 0;
+    let failCount = 0;
+    let lastError = null;
+
+    for (let i = 0; i < this.registerFiles.length; i++) {
+        const file = this.registerFiles[i];
+        
+        let name = file.name;
+        const lastDot = name.lastIndexOf('.');
+        if (lastDot > 0) name = name.substring(0, lastDot);
+        
+        try {
+            await lastValueFrom(this.svc.register(name, file));
+            successCount++;
+        } catch (e: any) {
+            failCount++;
+            lastError = e?.error?.detail ?? `Error en archivo ${file.name}`;
+            console.error('Error subiendo', file.name, e);
+        }
+        
+        this.batchProgress.set(i + 1);
+    }
+    
+    this.registerLoading.set(false);
+    this.registerFiles = [];
+    this.batchProgress.set(0);
+    this.batchTotal.set(0);
+    this.loadPersons();
+    
+    if (failCount === 0) {
+        this.registerMsg.set(`¡Se registraron ${successCount} rostros exitosamente!`);
+    } else if (successCount > 0) {
+        this.registerError.set(`Registro parcial: ${successCount} exitosos, ${failCount} fallidos. Último error: ${lastError}`);
+    } else {
+        this.registerError.set(`Error al registrar todos los ${failCount} archivos. Último error: ${lastError}`);
+    }
   }
 
   // ── Identify ────────────────────────────────────────────────────────────────

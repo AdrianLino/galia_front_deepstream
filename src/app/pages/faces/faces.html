@@ -226,7 +226,11 @@
               <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2">Imagen Origen (JPEG/PNG) <span class="text-red-400">*</span></label>
               
               <!-- Styled File Input Area -->
-              <div class="relative group mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-600 border-dashed rounded-xl hover:border-blue-500 hover:bg-blue-900/10 transition-colors">
+              <div class="relative group mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-xl transition-colors"
+                   [class]="isDragging() ? 'border-blue-400 bg-blue-900/20' : 'border-gray-600 hover:border-blue-500 hover:bg-blue-900/10'"
+                   (dragover)="onDragOver($event)" 
+                   (dragleave)="onDragLeave($event)" 
+                   (drop)="onDrop($event)">
                 <div class="space-y-2 text-center">
                   <svg class="mx-auto h-10 w-10 text-gray-500 group-hover:text-blue-400 transition-colors" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
                     <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
@@ -234,13 +238,17 @@
                   <div class="flex text-sm text-gray-400 justify-center">
                     <label class="relative cursor-pointer rounded-md font-bold text-blue-500 hover:text-blue-400 focus-within:outline-none">
                       <span>Explorar archivos</span>
-                      <input type="file" accept="image/jpeg,image/png" (change)="onRegisterFile($event)" class="sr-only">
+                      <input type="file" multiple accept="image/jpeg,image/png" (change)="onRegisterFile($event)" class="sr-only">
                     </label>
                     <p class="pl-1">o arrastrar aquí</p>
                   </div>
-                  @if (registerFile) {
+                  @if (registerFiles.length === 1) {
                     <p class="text-xs text-blue-300 font-medium bg-blue-900/30 inline-block px-3 py-1 rounded-full border border-blue-500/30">
-                      Archivo seleccionado: {{ registerFile.name }}
+                      Archivo seleccionado: {{ registerFiles[0].name }}
+                    </p>
+                  } @else if (registerFiles.length > 1) {
+                    <p class="text-xs text-blue-300 font-medium bg-blue-900/30 inline-block px-3 py-1 rounded-full border border-blue-500/30">
+                      {{ registerFiles.length }} archivos seleccionados
                     </p>
                   } @else {
                     <p class="text-[11px] text-gray-500">Solo imágenes. Un rostro por foto.</p>
@@ -251,7 +259,7 @@
           </div>
 
           <div class="pt-4 space-y-3">
-            <button (click)="register()" [disabled]="registerLoading() || !registerName.trim() || !registerFile"
+            <button (click)="register()" [disabled]="registerLoading() || (registerFiles.length === 1 && !registerName.trim()) || registerFiles.length === 0"
               class="w-full py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 disabled:from-gray-700 disabled:to-gray-700 disabled:text-gray-500 text-white rounded-xl font-bold shadow-lg shadow-blue-900/30 active:scale-[0.98] transition-all flex justify-center items-center gap-2">
               @if (registerLoading()) {
                 <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>

@@ -17,6 +17,7 @@ import {
   SpatialNode,
   SpatialNodeTipo,
   SpatialNodeCreate,
+  SpatialNodeUpdate,
   GeoPoint,
 } from '../../core/models/spatial.model';
 import { RtspSource, RtspSourceCreate, RtspSourceUpdate } from '../../core/models/stream.model';
@@ -177,6 +178,15 @@ export class GeocercasComponent implements OnInit, OnDestroy {
   private fovLayers: L.Polygon[] = [];
   private drawHandler?: (e: L.LeafletMouseEvent) => void;
   private mapInitialized = false;
+
+  // ── Edit location state ────────────────────────────────────────────────
+  editingNodeLocation = signal<SpatialNode | null>(null);
+  showEditLocation = signal(false);
+  editLocCentroLat: number | null = null;
+  editLocCentroLng: number | null = null;
+  editLocZoom: number | null = null;
+  savingEditLocation = signal(false);
+  private editLocCenterHandler?: (e: L.LeafletMouseEvent) => void;
 
   // ── Detail panel ───────────────────────────────────────────────────────
   selectedNode = signal<SpatialNode | null>(null);
@@ -779,6 +789,85 @@ export class GeocercasComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.error.set('Error eliminando nodo: ' + (err.error?.detail || err.message));
+      },
+    });
+  }
+
+  // ── Edit location ──────────────────────────────────────────────────────
+
+  openEditLocation(node: SpatialNode): void {
+    this.editingNodeLocation.set(node);
+    this.showDetail.set(false);
+    this.showEditLocation.set(true);
+    this.editLocCentroLat = node.centro_lat ?? null;
+    this.editLocCentroLng = node.centro_lng ?? null;
+    this.editLocZoom = node.zoom_nivel ?? null;
+    this.polygonPoints.set(node.geo_poligono && node.geo_poligono.length >= 3 ? [...node.geo_poligono] : []);
+    this.clearDrawing();
+    if (this.polygonPoints().length >= 3) this.renderDrawing();
+  }
+
+  cancelEditLocation(): void {
+    this.showEditLocation.set(false);
+    this.editingNodeLocation.set(null);
+    this.savingEditLocation.set(false);
+    if (this.editLocCenterHandler) {
+      this.map?.off('click', this.editLocCenterHandler);
+      this.editLocCenterHandler = undefined;
+      if (this.map) this.map.getContainer().style.cursor = '';
+    }
+    if (this.drawingPolygon()) {
+      this.cancelDrawing();
+    } else {
+      this.polygonPoints.set([]);
+      this.clearDrawing();
+    }
+  }
+
+  pickEditLocCenter(): void {
+    if (!this.map) return;
+    this.editLocCenterHandler = (e: L.LeafletMouseEvent) => {
+      this.editLocCentroLat = Math.round(e.latlng.lat * 1e6) / 1e6;
+      this.editLocCentroLng = Math.round(e.latlng.lng * 1e6) / 1e6;
+      if (this.map && this.editLocCenterHandler) {
+        this.map.off('click', this.editLocCenterHandler);
+        this.map.getContainer().style.cursor = '';
+      }
+      this.editLocCenterHandler = undefined;
+    };
+    this.map.on('click', this.editLocCenterHandler);
+    this.map.getContainer().style.cursor = 'crosshair';
+  }
+
+  saveEditLocation(): void {
+    const node = this.editingNodeLocation();
+    if (!node) return;
+    this.savingEditLocation.set(true);
+    const pts = this.polygonPoints();
+    let centroLat = this.editLocCentroLat;
+    let centroLng = this.editLocCentroLng;
+    if (!centroLat && !centroLng && pts.length >= 3) {
+      centroLat = pts.reduce((s, p) => s + p.lat, 0) / pts.length;
+      centroLng = pts.reduce((s, p) => s + p.lng, 0) / pts.length;
+    }
+    const body: SpatialNodeUpdate = {
+      geo_poligono: pts.length >= 3 ? pts : undefined,
+      centro_lat: centroLat ?? undefined,
+      centro_lng: centroLng ?? undefined,
+      zoom_nivel: this.editLocZoom ?? undefined,
+    };
+    this.spatialSvc.updateNode(node.id, body).subscribe({
+      next: () => {
+        this.savingEditLocation.set(false);
+        this.showEditLocation.set(false);
+        this.editingNodeLocation.set(null);
+        if (this.drawingPolygon()) this.cancelDrawing();
+        else { this.polygonPoints.set([]); this.clearDrawing(); }
+        this.loadNodes();
+      },
+      error: (err) => {
+        this.savingEditLocation.set(false);
+        this.error.set('Error guardando ubicación: ' + (err.error?.detail || err.message));
       },
     });
   }
