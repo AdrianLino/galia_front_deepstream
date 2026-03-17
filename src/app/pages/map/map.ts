@@ -79,6 +79,21 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   trackingResult = signal<TrackingResult | null>(null);
   trackingFilter = '';
   loadingPersons = signal(false);
+  showTrackingFeed = signal(false);
+  trackingFeedExpanded = signal(false);
+  streamSources = signal<string[]>([]);
+  trackingFeedUrl = computed(() => {
+    const result = this.trackingResult();
+    if (!result?.live?.length) return '';
+    const liveUrl = result.live[0].rtsp_url;
+    const idx = this.streamSources().indexOf(liveUrl);
+    if (idx < 0) return '';
+    return `${this.streamSvc.viewUrl}?camera=${idx}&_t=${Date.now()}`;
+  });
+  trackingFeedCamera = computed(() => {
+    const result = this.trackingResult();
+    return result?.live?.[0]?.camara ?? '';
+  });
 
   // ── Playback ───────────────────────────────────────────────────────────────
   isPlaying = signal(false);
@@ -480,11 +495,18 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     this.stopPoll();
     this.trackedPerson.set(null);
     this.trackingResult.set(null);
+    this.showTrackingFeed.set(false);
+    this.trackingFeedExpanded.set(false);
     this.clearSessionLayers();
     this.resetMarkerColors();
   }
 
   private startTracking(): void {
+    // Fetch source list once so we can map rtsp_url → camera index
+    this.streamSvc.getStatus().subscribe({
+      next: s => this.streamSources.set(s.sources),
+      error: () => this.streamSources.set([]),
+    });
     this.pollTracking();
     this.pollTimer = setInterval(() => this.pollTracking(), 3000);
   }
@@ -497,6 +519,10 @@ export class MapComponent implements AfterViewInit, OnDestroy {
         this.trackingResult.set(result);
         this.renderTracking(result);
         this.graphAvailable.set(true);
+        // Auto-show feed when person is live
+        if (result.live.length > 0 && !this.showTrackingFeed()) {
+          this.showTrackingFeed.set(true);
+        }
       },
       error: () => this.graphAvailable.set(false),
     });
@@ -563,6 +589,15 @@ export class MapComponent implements AfterViewInit, OnDestroy {
 
   personPhotoUrl(person: Person): string {
     return this.facesSvc.photoUrl(person.id);
+  }
+
+  toggleTrackingFeed(): void {
+    this.showTrackingFeed.update(v => !v);
+    if (!this.showTrackingFeed()) this.trackingFeedExpanded.set(false);
+  }
+
+  toggleFeedExpanded(): void {
+    this.trackingFeedExpanded.update(v => !v);
   }
 
   jumpToCamera(cameraName: string): void {
