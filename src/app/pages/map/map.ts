@@ -83,18 +83,16 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   enrolledPersons = signal<Person[]>([]);
   trackedPerson = signal<Person | null>(null);
   trackingResult = signal<TrackingResult | null>(null);
-  trackingFilter = '';
+  trackingFilter = signal('');
   loadingPersons = signal(false);
   showTrackingFeed = signal(false);
   trackingFeedExpanded = signal(false);
   streamSources = signal<string[]>([]);
+  trackingCameraIdx = signal(-1);
   trackingFeedUrl = computed(() => {
-    const result = this.trackingResult();
-    if (!result?.live?.length) return '';
-    const liveUrl = result.live[0].rtsp_url;
-    const idx = this.streamSources().indexOf(liveUrl);
+    const idx = this.trackingCameraIdx();
     if (idx < 0) return '';
-    return `${this.streamSvc.viewUrl}?camera=${idx}&_t=${Date.now()}`;
+    return `${this.streamSvc.viewUrl}?camera=${idx}`;
   });
   trackingFeedCamera = computed(() => {
     const result = this.trackingResult();
@@ -154,8 +152,11 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   activeUnknown = computed(() =>
     this.activeSessions().filter(s => !s.enrollado)
   );
+  livePersonNames = computed(() =>
+    new Set(this.activeSessions().filter(s => s.enrollado).map(s => s.persona))
+  );
   filteredPersons = computed(() => {
-    const f = this.trackingFilter.toLowerCase().trim();
+    const f = this.trackingFilter().toLowerCase().trim();
     const list = this.enrolledPersons();
     if (!f) return list;
     return list.filter(p => p.name.toLowerCase().includes(f));
@@ -574,6 +575,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     this.trackingResult.set(null);
     this.showTrackingFeed.set(false);
     this.trackingFeedExpanded.set(false);
+    this.trackingCameraIdx.set(-1);
     this.clearSessionLayers();
     this.resetMarkerColors();
   }
@@ -591,14 +593,24 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   private pollTracking(): void {
     const person = this.trackedPerson();
     if (!person) return;
+    // Also refresh active sessions to know who is currently on camera
+    this.graphSvc.getActive().subscribe({
+      next: sessions => this.activeSessions.set(sessions),
+    });
     this.graphSvc.getTracking(person.name).subscribe({
       next: result => {
         this.trackingResult.set(result);
         this.renderTracking(result);
         this.graphAvailable.set(true);
-        // Auto-show feed when person is live
-        if (result.live.length > 0 && !this.showTrackingFeed()) {
-          this.showTrackingFeed.set(true);
+
+        // Resolve camera index (only update when it changes to avoid reconnect)
+        if (result.live.length > 0) {
+          const liveUrl = result.live[0].rtsp_url;
+          const idx = this.streamSources().indexOf(liveUrl);
+          if (idx !== this.trackingCameraIdx()) this.trackingCameraIdx.set(idx);
+          if (idx >= 0 && !this.showTrackingFeed()) this.showTrackingFeed.set(true);
+        } else {
+          if (this.trackingCameraIdx() !== -1) this.trackingCameraIdx.set(-1);
         }
       },
       error: () => this.graphAvailable.set(false),
