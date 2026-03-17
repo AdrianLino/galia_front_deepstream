@@ -487,6 +487,28 @@
     <!-- Leaflet map (always in DOM for init, hidden in interior mode) -->
     <div #mapDiv class="w-full h-full" [class.hidden]="viewLayer() === 'interior'"></div>
 
+    <!-- FOV toggle button (bottom-left, only in exterior) -->
+    <button *ngIf="viewLayer() !== 'interior'"
+            (click)="toggleAllFov()"
+            class="absolute bottom-4 left-4 z-[500] flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors shadow-lg"
+            [class.bg-red-600]="showAllFov()"
+            [class.border-red-500]="showAllFov()"
+            [class.text-white]="showAllFov()"
+            [class.bg-gray-900/90]="!showAllFov()"
+            [class.border-gray-700]="!showAllFov()"
+            [class.text-gray-400]="!showAllFov()"
+            [class.hover:text-white]="!showAllFov()"
+            [class.hover:border-gray-500]="!showAllFov()"
+            title="Mostrar/ocultar conos de visión de todas las cámaras">
+      <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+      </svg>
+      {{ showAllFov() ? 'Ocultar FOV' : 'Mostrar FOV' }}
+    </button>
+
     <!-- ── Interior SVG floor plan ── -->
     <div *ngIf="viewLayer() === 'interior'" class="w-full h-full bg-gray-950 flex flex-col overflow-hidden">
       <div class="flex-1 overflow-hidden p-2">
@@ -608,8 +630,8 @@
         <span class="text-gray-400">Visto recientemente</span>
       </div>
       <div class="flex items-center gap-2">
-        <div class="w-4 border-t-2 border-dashed border-blue-400"></div>
-        <span class="text-gray-400">Dirección FOV</span>
+        <div class="w-4 h-3 rounded-sm" style="background:rgba(239,68,68,0.25);border:1px solid #ef4444"></div>
+        <span class="text-gray-400">Cobertura FOV</span>
       </div>
     </div>
 

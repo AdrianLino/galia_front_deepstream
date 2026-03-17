@@ -49,6 +49,12 @@ type MapMode = 'live' | 'forensic' | 'tracking';
       100% { transform: scale(2.0); opacity: 0; }
     }
     .pulse-ring { animation: pulse-ring 1.8s ease-out infinite; }
+    /* FOV cone animation (same as geocercas) */
+    @keyframes fov-pulse {
+      0%, 100% { opacity: 0.18; }
+      50% { opacity: 0.30; }
+    }
+    :host ::ng-deep .fov-cone { animation: fov-pulse 3s ease-in-out infinite; }
   `],
 })
 export class MapComponent implements AfterViewInit, OnDestroy {
@@ -168,6 +174,9 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   private cameraMarkers = new Map<string, L.CircleMarker>(); // key = camera id
   private sessionLayers: L.Layer[] = [];
   private fovLines: L.Layer[] = [];
+  private fovMap = new Map<string, L.Layer>();   // cam.id → pre-built cone
+  private activeFov: L.Layer | null = null;      // currently hovered cone
+  showAllFov = signal(false);
   private pollTimer?: ReturnType<typeof setInterval>;
 
   // ── Playback internals ─────────────────────────────────────────────────────
@@ -206,6 +215,9 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     });
     street.addTo(this.map);
     L.control.layers({ 'Calles': street, 'Satélite': satellite }, {}, { position: 'topright' }).addTo(this.map);
+
+    // Dynamic tooltip visibility based on zoom
+    this.map.on('zoomend', () => this.updateTooltipVisibility());
   }
 
   private loadCameras(): void {
@@ -225,6 +237,8 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     this.cameraMarkers.clear();
     this.fovLines.forEach(l => l.remove());
     this.fovLines = [];
+    this.fovMap.clear();
+    this.activeFov = null;
 
     for (const cam of this.camerasWithCoords()) {
       const marker = L.circleMarker([cam.latitud!, cam.longitud!], {
@@ -236,7 +250,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
         fillOpacity: 0.85,
       })
         .bindTooltip(cam.name, {
-          permanent: true,
+          permanent: false,
           direction: 'top',
           offset: [0, -12],
         })
@@ -245,25 +259,88 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       marker.bindPopup(this.buildCameraPopup(cam));
       this.cameraMarkers.set(cam.id, marker);
 
-      // FOV direction line
+      // Build FOV cone (not added to map yet — shown on hover or toggle)
       if (cam.azimuth != null) {
-        const line = this.buildFovLine(cam);
-        if (line) this.fovLines.push(line);
+        const cone = this.buildFovCone(cam);
+        if (cone) {
+          this.fovMap.set(cam.id, cone);
+          if (this.showAllFov()) cone.addTo(this.map!);
+        }
       }
+
+      // Hover → show/hide individual cone
+      marker.on('mouseover', () => {
+        if (this.showAllFov()) return;
+        const c = this.fovMap.get(cam.id);
+        if (c) { c.addTo(this.map!); this.activeFov = c; }
+      });
+      marker.on('mouseout', () => {
+        if (this.showAllFov()) return;
+        if (this.activeFov) { this.activeFov.remove(); this.activeFov = null; }
+      });
+    }
+
+    this.updateTooltipVisibility();
+  }
+
+  /** Build FOV cone polygon — geocercas style (smooth arc, 24 steps, 2.5D range). */
+  private buildFovCone(cam: RtspSource): L.Layer | null {
+    if (cam.latitud == null || cam.longitud == null || cam.azimuth == null) return null;
+
+    const DEG = Math.PI / 180;
+    const fov   = cam.fov_angulo ?? 70;
+    const half  = fov / 2;
+    const steps = 24;
+
+    // Compute visual range in degrees (~metres / 111111)
+    let rangeDeg: number;
+    if (cam.inclinacion_angulo != null && cam.inclinacion_angulo > 2) {
+      const h    = cam.altura_m ?? 3;
+      const tilt = cam.inclinacion_angulo * DEG;
+      const vfov = (fov / 1.778) * DEG;
+      const tLow = tilt - vfov / 2;
+      const dFar = tLow > 0.05 ? Math.min(h / Math.tan(tLow), 60) : 35;
+      rangeDeg = dFar / 111111;
+    } else {
+      rangeDeg = 0.00035;  // ~35m default, same as geocercas
+    }
+
+    const pts: L.LatLngExpression[] = [[cam.latitud, cam.longitud]];
+    for (let i = 0; i <= steps; i++) {
+      const angle = cam.azimuth - half + (fov * i) / steps;
+      const rad = ((90 - angle) * Math.PI) / 180;
+      const dx = rangeDeg * Math.cos(rad);
+      const dy = rangeDeg * Math.sin(rad);
+      pts.push([cam.latitud + dy, cam.longitud + dx]);
+    }
+    pts.push([cam.latitud, cam.longitud]);
+
+    return L.polygon(pts, {
+      color: '#ef4444',
+      weight: 1,
+      fillColor: '#ef4444',
+      fillOpacity: 0.18,
+      className: 'fov-cone',
+      interactive: false,
+    });
+  }
+
+  toggleAllFov(): void {
+    this.showAllFov.update(v => !v);
+    if (this.showAllFov()) {
+      this.fovMap.forEach(c => c.addTo(this.map!));
+    } else {
+      this.fovMap.forEach(c => c.remove());
     }
   }
 
-  private buildFovLine(cam: RtspSource): L.Polyline | null {
-    if (cam.latitud == null || cam.longitud == null || cam.azimuth == null) return null;
-    // Convert azimuth (0=North, clockwise) to math angle
-    const rad = ((cam.azimuth - 90) * Math.PI) / 180;
-    const dist = 0.00025; // ~25 m in degrees
-    const endLat = cam.latitud + dist * Math.sin(rad) * -1;
-    const endLng = cam.longitud + dist * Math.cos(rad);
-    return L.polyline(
-      [[cam.latitud, cam.longitud], [endLat, endLng]],
-      { color: '#60a5fa', weight: 2, opacity: 0.55, dashArray: '5 4' }
-    ).addTo(this.map!);
+  private updateTooltipVisibility(): void {
+    if (!this.map) return;
+    const zoom = this.map.getZoom();
+    const show = zoom >= 19;
+    this.cameraMarkers.forEach(m => {
+      if (show) m.openTooltip(); else m.closeTooltip();
+    });
   }
 
   private buildCameraPopup(cam: RtspSource): string {
