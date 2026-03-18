@@ -34,5 +34,9 @@ export const routes: Routes = [
     path: 'notifications',
     loadComponent: () => import('./pages/notifications/notifications').then((m) => m.NotificationsComponent),
   },
+  {
+    path: 'settings',
+    loadComponent: () => import('./pages/settings/settings').then((m) => m.SettingsComponent),
+  },
   { path: '**', redirectTo: 'dashboard' },
 ];
