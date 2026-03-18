@@ -3,6 +3,7 @@ export interface Person {
   name: string;
   image_path?: string;
   embedding_count: number;
+  alert_level: 'normal' | 'watch' | 'critical';
   created_at: string;
   updated_at?: string;
 }

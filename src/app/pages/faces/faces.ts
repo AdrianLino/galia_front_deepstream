@@ -3,6 +3,7 @@ import { lastValueFrom } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FacesService } from '../../core/services/faces.service';
+import { AlertService } from '../../core/services/alert.service';
 import { FaceResult, IdentifyResponse, Person } from '../../core/models/face.model';
 
 type Tab = 'persons' | 'register' | 'identify';
@@ -20,6 +21,7 @@ type Tab = 'persons' | 'register' | 'identify';
 })
 export class FacesComponent implements OnInit, OnDestroy {
   private svc = inject(FacesService);
+  private alertSvc = inject(AlertService);
 
   activeTab = signal<Tab>('persons');
 
@@ -166,6 +168,21 @@ export class FacesComponent implements OnInit, OnDestroy {
     this.svc.delete(person.id).subscribe({
       next: () => { this.deleteLoading.set(null); this.loadPersons(); },
       error: (err) => { alert(err?.error?.detail ?? 'Error al eliminar.'); this.deleteLoading.set(null); },
+    });
+  }
+
+  // ── Alert Level (Watchlist) ─────────────────────────────────────────────────
+
+  cycleAlertLevel(person: Person) {
+    const cycle: Record<string, 'normal' | 'watch' | 'critical'> = {
+      normal: 'watch',
+      watch: 'critical',
+      critical: 'normal',
+    };
+    const next = cycle[person.alert_level || 'normal'] || 'watch';
+    this.alertSvc.setAlertLevel(person.id, next).subscribe({
+      next: () => this.loadPersons(),
+      error: (err) => alert(err?.error?.detail ?? 'Error al cambiar nivel de alerta.'),
     });
   }
 

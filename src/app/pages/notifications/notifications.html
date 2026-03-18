@@ -1,0 +1,518 @@
+<div class="p-6 max-w-7xl mx-auto">
+
+  <!-- ═══ Header ═══ -->
+  <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center shadow-lg">
+        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-white">Notificaciones</h1>
+        <p class="text-sm text-gray-400">Historial de alertas y gestión de personas de interés</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Tabs ═══ -->
+  <div class="flex items-center gap-1 p-1 bg-gray-800/50 rounded-xl border border-gray-700/30 w-fit mb-6">
+    <button (click)="switchTab('history')"
+            class="px-5 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2"
+            [class]="activeTab() === 'history' ? 'bg-red-600 text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-gray-700/50'">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      Historial de Alertas
+      @if (pendingCount() > 0) {
+        <span class="ml-1 text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded-full font-bold">{{ pendingCount() }}</span>
+      }
+    </button>
+    <button (click)="switchTab('watchlist')"
+            class="px-5 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2"
+            [class]="activeTab() === 'watchlist' ? 'bg-yellow-600 text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-gray-700/50'">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+      </svg>
+      Lista de Vigilancia
+    </button>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════ -->
+  <!-- TAB: Historial de Alertas                                               -->
+  <!-- ════════════════════════════════════════════════════════════════════════ -->
+  @if (activeTab() === 'history') {
+
+    <!-- Filters bar -->
+    <div class="flex items-center gap-4 mb-4 flex-wrap">
+      <!-- Level filter -->
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-gray-500 uppercase tracking-wide font-semibold">Nivel:</span>
+        <div class="flex gap-1">
+          <button (click)="filterLevel.set('all'); loadAlerts()"
+                  class="px-3 py-1 text-xs rounded-full font-semibold transition-all"
+                  [class]="filterLevel() === 'all' ? 'bg-gray-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'">
+            Todos
+          </button>
+          <button (click)="filterLevel.set('critical'); loadAlerts()"
+                  class="px-3 py-1 text-xs rounded-full font-semibold transition-all"
+                  [class]="filterLevel() === 'critical' ? 'bg-red-600 text-white' : 'bg-gray-800 text-red-400 hover:bg-red-900/30'">
+            Crítico
+          </button>
+          <button (click)="filterLevel.set('watch'); loadAlerts()"
+                  class="px-3 py-1 text-xs rounded-full font-semibold transition-all"
+                  [class]="filterLevel() === 'watch' ? 'bg-yellow-600 text-white' : 'bg-gray-800 text-yellow-400 hover:bg-yellow-900/30'">
+            Vigilar
+          </button>
+        </div>
+      </div>
+
+      <!-- Ack filter -->
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-gray-500 uppercase tracking-wide font-semibold">Estado:</span>
+        <div class="flex gap-1">
+          <button (click)="filterAck.set('all'); loadAlerts()"
+                  class="px-3 py-1 text-xs rounded-full font-semibold transition-all"
+                  [class]="filterAck() === 'all' ? 'bg-gray-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'">
+            Todos
+          </button>
+          <button (click)="filterAck.set('pending'); loadAlerts()"
+                  class="px-3 py-1 text-xs rounded-full font-semibold transition-all"
+                  [class]="filterAck() === 'pending' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-blue-400 hover:bg-blue-900/30'">
+            Pendientes
+          </button>
+          <button (click)="filterAck.set('acknowledged'); loadAlerts()"
+                  class="px-3 py-1 text-xs rounded-full font-semibold transition-all"
+                  [class]="filterAck() === 'acknowledged' ? 'bg-green-600 text-white' : 'bg-gray-800 text-green-400 hover:bg-green-900/30'">
+            Leídas
+          </button>
+        </div>
+      </div>
+
+      <div class="flex-1"></div>
+
+      <!-- Actions -->
+      <button (click)="loadAlerts()"
+              class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-300 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors border border-gray-700">
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        Actualizar
+      </button>
+      @if (pendingCount() > 0) {
+        <button (click)="acknowledgeAll()"
+                class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-green-400 bg-green-900/20 rounded-lg hover:bg-green-900/40 transition-colors border border-green-700/40">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          Marcar todas leídas
+        </button>
+      }
+    </div>
+
+    <!-- Loading state -->
+    @if (loading()) {
+      <div class="flex items-center justify-center py-16">
+        <div class="w-8 h-8 border-2 border-gray-700 border-t-red-500 rounded-full animate-spin"></div>
+      </div>
+    } @else if (alerts().length === 0) {
+      <div class="text-center py-16">
+        <svg class="w-16 h-16 mx-auto text-gray-700 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        </svg>
+        <p class="text-lg text-gray-500 font-semibold">Sin alertas registradas</p>
+        <p class="text-sm text-gray-600 mt-1">Las alertas aparecerán aquí cuando se detecten personas de interés</p>
+      </div>
+    } @else {
+
+      <!-- Alert cards list -->
+      <div class="space-y-3">
+        @for (alert of alerts(); track alert.id) {
+          <div class="bg-gray-800/60 rounded-xl border overflow-hidden transition-all hover:bg-gray-800/80"
+               [class]="alert.alert_level === 'critical'
+                 ? 'border-red-500/30 hover:border-red-500/50'
+                 : 'border-yellow-500/20 hover:border-yellow-500/40'"
+               [class.opacity-50]="alert.acknowledged">
+
+            <!-- Color bar -->
+            <div class="h-1 w-full"
+                 [class]="alert.alert_level === 'critical' ? 'bg-red-500' : 'bg-yellow-500'"></div>
+
+            <div class="p-4">
+              <div class="flex items-start gap-4">
+
+                <!-- ═══ DUAL PHOTOS ═══ -->
+                <div class="flex items-center gap-2 shrink-0">
+
+                  <!-- Foto registrada (del sistema) -->
+                  <div class="relative group">
+                    <div class="w-16 h-16 rounded-xl overflow-hidden border-2 border-blue-500/40 bg-gray-900 shadow-lg">
+                      @if (alert.person_id) {
+                        <img [src]="photoUrl(alert.person_id)"
+                             [alt]="alert.person_name"
+                             class="w-full h-full object-cover"
+                             (error)="$event.target['style'].display='none'" />
+                      }
+                      <div class="w-full h-full flex items-center justify-center bg-gray-800">
+                        <svg class="w-7 h-7 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                        </svg>
+                      </div>
+                    </div>
+                    <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[8px] font-bold bg-blue-600 text-white px-1.5 py-0.5 rounded-full whitespace-nowrap shadow">
+                      REGISTRO
+                    </span>
+                  </div>
+
+                  <!-- Flecha VS -->
+                  <div class="flex flex-col items-center gap-0.5">
+                    <span class="text-[9px] font-black text-gray-500 tracking-wider">VS</span>
+                    <svg class="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </div>
+
+                  <!-- Foto de detección (capturada) -->
+                  <div class="relative group">
+                    <div class="w-16 h-16 rounded-xl overflow-hidden border-2 bg-gray-900 shadow-lg"
+                         [class]="alert.alert_level === 'critical' ? 'border-red-500/50' : 'border-yellow-500/40'">
+                      @if (alert.thumbnail_path) {
+                        <img [src]="thumbnailUrl(alert.id)"
+                             alt="Detección"
+                             class="w-full h-full object-cover"
+                             (error)="$event.target['style'].display='none'" />
+                      }
+                      <div class="w-full h-full flex items-center justify-center bg-gray-800">
+                        <svg class="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[8px] font-bold text-white px-1.5 py-0.5 rounded-full whitespace-nowrap shadow"
+                          [class]="alert.alert_level === 'critical' ? 'bg-red-600' : 'bg-yellow-600'">
+                      CAPTADO
+                    </span>
+                  </div>
+                </div>
+
+                <!-- ═══ INFO ═══ -->
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="text-base font-bold text-white truncate">{{ alert.person_name }}</span>
+                    <span class="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider"
+                          [class]="alert.alert_level === 'critical'
+                            ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                            : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'">
+                      {{ alert.alert_level === 'critical' ? 'CRÍTICO' : 'VIGILAR' }}
+                    </span>
+                    @if (alert.acknowledged) {
+                      <span class="text-[9px] font-bold text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">✓ Leída</span>
+                    }
+                  </div>
+
+                  <div class="flex items-center gap-4 text-xs text-gray-400 mb-2">
+                    <div class="flex items-center gap-1">
+                      <svg class="w-3.5 h-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                      </svg>
+                      <span>{{ alert.camera_name || 'Cámara desconocida' }}</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                      <svg class="w-3.5 h-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>{{ (alert.confidence * 100).toFixed(1) }}% confianza</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                      <svg class="w-3.5 h-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>{{ relativeTime(alert.created_at) }}</span>
+                    </div>
+                  </div>
+
+                  <div class="text-[10px] text-gray-500 mb-2">{{ formatDate(alert.created_at) }}</div>
+
+                  <!-- Action buttons -->
+                  <div class="flex items-center gap-2">
+                    @if (alert.clip_path) {
+                      <button (click)="toggleClip(alert)"
+                              class="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-all"
+                              [class]="playingClipId() === alert.id
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20'">
+                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {{ playingClipId() === alert.id ? 'Ocultar clip' : 'Ver clip 10s' }}
+                      </button>
+                    }
+                    <button (click)="openDetail(alert)"
+                            class="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-gray-400 bg-gray-700/50 rounded-lg hover:bg-gray-700 transition-all border border-gray-600/30">
+                      <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                      </svg>
+                      Detalle
+                    </button>
+                    @if (!alert.acknowledged) {
+                      <button (click)="acknowledgeOne(alert.id)"
+                              class="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-green-400 bg-green-500/10 rounded-lg hover:bg-green-500/20 transition-all border border-green-500/20">
+                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Marcar leída
+                      </button>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <!-- Inline clip player -->
+              @if (playingClipId() === alert.id) {
+                <div class="mt-3 rounded-lg overflow-hidden border border-gray-700 bg-black">
+                  <video [src]="clipUrl(alert.id)"
+                         controls autoplay
+                         class="w-full max-h-64 rounded-lg">
+                  </video>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <!-- ════════════════════════════════════════════════════════════════════════ -->
+  <!-- TAB: Lista de Vigilancia                                                -->
+  <!-- ════════════════════════════════════════════════════════════════════════ -->
+  @if (activeTab() === 'watchlist') {
+
+    @if (watchlistLoading()) {
+      <div class="flex items-center justify-center py-16">
+        <div class="w-8 h-8 border-2 border-gray-700 border-t-yellow-500 rounded-full animate-spin"></div>
+      </div>
+    } @else if (watchlist().length === 0) {
+      <div class="text-center py-16">
+        <svg class="w-16 h-16 mx-auto text-gray-700 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+        <p class="text-lg text-gray-500 font-semibold">Lista de vigilancia vacía</p>
+        <p class="text-sm text-gray-600 mt-1">Agrega personas de interés desde la sección de Faces</p>
+      </div>
+    } @else {
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        @for (person of watchlist(); track person.id) {
+          <div class="bg-gray-800/60 rounded-xl border overflow-hidden transition-all hover:bg-gray-800/80"
+               [class]="person.alert_level === 'critical'
+                 ? 'border-red-500/30 hover:border-red-500/50'
+                 : 'border-yellow-500/20 hover:border-yellow-500/40'">
+
+            <div class="h-1 w-full"
+                 [class]="person.alert_level === 'critical' ? 'bg-red-500' : 'bg-yellow-500'"></div>
+
+            <div class="p-4 flex items-center gap-4">
+              <div class="w-14 h-14 rounded-xl overflow-hidden border-2 shrink-0"
+                   [class]="person.alert_level === 'critical' ? 'border-red-500/50' : 'border-yellow-500/40'">
+                @if (person.id) {
+                  <img [src]="photoUrl(person.id)"
+                       [alt]="person.name"
+                       class="w-full h-full object-cover"
+                       (error)="$event.target['style'].display='none'" />
+                }
+                <div class="w-full h-full flex items-center justify-center bg-gray-800">
+                  <svg class="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>
+                </div>
+              </div>
+
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-sm font-bold text-white truncate">{{ person.name }}</span>
+                  <span class="text-[9px] font-black px-2 py-0.5 rounded-full uppercase"
+                        [class]="person.alert_level === 'critical'
+                          ? 'bg-red-500/20 text-red-400'
+                          : 'bg-yellow-500/20 text-yellow-400'">
+                    {{ person.alert_level === 'critical' ? 'CRÍTICO' : 'VIGILAR' }}
+                  </span>
+                </div>
+                <p class="text-xs text-gray-500">{{ person.embedding_count }} embeddings registrados</p>
+              </div>
+
+              <div class="flex items-center gap-1.5 shrink-0">
+                <button (click)="cycleAlertLevel(person)"
+                        class="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-gray-400 hover:text-white bg-gray-700/50 hover:bg-gray-700 border border-gray-600/30"
+                        title="Cambiar nivel">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                  </svg>
+                </button>
+                <button (click)="removeFromWatchlist(person)"
+                        class="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-gray-400 hover:text-red-400 bg-gray-700/50 hover:bg-red-900/20 border border-gray-600/30"
+                        title="Quitar de vigilancia">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <!-- ════════════════════════════════════════════════════════════════════════ -->
+  <!-- MODAL: Alert Detail                                                     -->
+  <!-- ════════════════════════════════════════════════════════════════════════ -->
+  @if (selectedAlert(); as alert) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+         (click)="closeDetail()">
+      <div class="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden"
+           (click)="$event.stopPropagation()">
+
+        <!-- Modal color bar -->
+        <div class="h-1.5 w-full"
+             [class]="alert.alert_level === 'critical' ? 'bg-red-500' : 'bg-yellow-500'"></div>
+
+        <div class="p-6">
+          <!-- Header -->
+          <div class="flex items-center justify-between mb-5">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-black uppercase tracking-widest"
+                    [class]="alert.alert_level === 'critical' ? 'text-red-400' : 'text-yellow-400'">
+                {{ alert.alert_level === 'critical' ? 'ALERTA CRÍTICA' : 'PERSONA EN VIGILANCIA' }}
+              </span>
+              <span class="text-[10px] text-gray-500">#{{ alert.id }}</span>
+            </div>
+            <button (click)="closeDetail()"
+                    class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Dual photos large -->
+          <div class="flex items-center justify-center gap-4 mb-5">
+            <!-- Registered -->
+            <div class="text-center">
+              <div class="w-28 h-28 rounded-2xl overflow-hidden border-3 border-blue-500/50 bg-gray-800 shadow-xl mx-auto mb-2">
+                @if (alert.person_id) {
+                  <img [src]="photoUrl(alert.person_id)"
+                       class="w-full h-full object-cover"
+                       (error)="$event.target['style'].display='none'" />
+                }
+                <div class="w-full h-full flex items-center justify-center">
+                  <svg class="w-10 h-10 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>
+                </div>
+              </div>
+              <span class="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Foto de registro</span>
+            </div>
+
+            <!-- VS arrow -->
+            <div class="flex flex-col items-center py-4">
+              <span class="text-xs font-black text-gray-500 mb-1">VS</span>
+              <svg class="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </div>
+
+            <!-- Detection -->
+            <div class="text-center">
+              <div class="w-28 h-28 rounded-2xl overflow-hidden border-3 bg-gray-800 shadow-xl mx-auto mb-2"
+                   [class]="alert.alert_level === 'critical' ? 'border-red-500/50' : 'border-yellow-500/50'">
+                @if (alert.thumbnail_path) {
+                  <img [src]="thumbnailUrl(alert.id)"
+                       class="w-full h-full object-cover"
+                       (error)="$event.target['style'].display='none'" />
+                }
+                <div class="w-full h-full flex items-center justify-center">
+                  <svg class="w-8 h-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+              </div>
+              <span class="text-[10px] font-bold uppercase tracking-wider"
+                    [class]="alert.alert_level === 'critical' ? 'text-red-400' : 'text-yellow-400'">
+                Foto de detección
+              </span>
+            </div>
+          </div>
+
+          <!-- Details -->
+          <div class="bg-gray-800/50 rounded-xl p-4 space-y-2 mb-4">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-400">Persona</span>
+              <span class="font-bold text-white">{{ alert.person_name }}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-400">Cámara</span>
+              <span class="text-gray-200">{{ alert.camera_name || 'Desconocida' }}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-400">Confianza</span>
+              <span class="text-gray-200">{{ (alert.confidence * 100).toFixed(1) }}%</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-400">Fecha</span>
+              <span class="text-gray-200">{{ formatDate(alert.created_at) }}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-400">Estado</span>
+              <span [class]="alert.acknowledged ? 'text-green-400' : 'text-yellow-400'">
+                {{ alert.acknowledged ? 'Leída' : 'Pendiente' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Clip in modal -->
+          @if (alert.clip_path) {
+            <div class="rounded-xl overflow-hidden border border-gray-700 bg-black mb-4">
+              <video [src]="clipUrl(alert.id)"
+                     controls
+                     class="w-full max-h-56 rounded-xl">
+              </video>
+              <div class="px-3 py-1.5 bg-gray-800/80 text-[10px] text-gray-400">
+                Clip de 10 segundos capturado al momento de la detección
+              </div>
+            </div>
+          }
+
+          <!-- Modal actions -->
+          <div class="flex items-center gap-2 justify-end">
+            @if (!alert.acknowledged) {
+              <button (click)="acknowledgeOne(alert.id); closeDetail()"
+                      class="px-4 py-2 text-sm font-semibold text-green-400 bg-green-500/10 rounded-lg hover:bg-green-500/20 transition-colors border border-green-500/20">
+                ✓ Marcar como leída
+              </button>
+            }
+            <button (click)="closeDetail()"
+                    class="px-4 py-2 text-sm font-semibold text-gray-400 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors">
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

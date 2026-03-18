@@ -30,5 +30,9 @@ export const routes: Routes = [
     path: 'geocercas',
     loadComponent: () => import('./pages/geocercas/geocercas').then((m) => m.GeocercasComponent),
   },
+  {
+    path: 'notifications',
+    loadComponent: () => import('./pages/notifications/notifications').then((m) => m.NotificationsComponent),
+  },
   { path: '**', redirectTo: 'dashboard' },
 ];
