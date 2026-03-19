@@ -55,6 +55,7 @@ export class StreamComponent implements OnInit, OnDestroy {
   readonly viewUrl = this.streamService.viewUrl;
 
   private retryTimer?: ReturnType<typeof setTimeout>;
+  private singleRetryTimer?: ReturnType<typeof setTimeout>;
 
   // ── Saved RTSP sources ────────────────────────────────────────────────────
   sources = signal<RtspSource[]>([]);
@@ -178,6 +179,13 @@ export class StreamComponent implements OnInit, OnDestroy {
     () => `${this.viewUrl}?camera=${this.selectedCamera()}&_t=${this.streamRevision()}`
   );
 
+  /** Unified stream URL — switches automatically between mosaic / single.
+   *  Using a single <img> avoids destroy/create cycles that leave zombie
+   *  MJPEG connections while the browser tears down the old one. */
+  currentStreamUrl = computed(() =>
+    this.viewMode() === 'single' ? this.singleCameraUrl() : this.fullMosaicUrl()
+  );
+
   cameraIndices = computed(() => {
     const n = this.showStream()
       ? this.streamSourcesCount()
@@ -202,6 +210,7 @@ export class StreamComponent implements OnInit, OnDestroy {
     this.largeMap = undefined;
     this.addMapMarker = undefined;
     this.largeMapMarker = undefined;
+    clearTimeout(this.singleRetryTimer);
   }
 
   // ── Pipeline methods ──────────────────────────────────────────────────────
@@ -281,12 +290,30 @@ export class StreamComponent implements OnInit, OnDestroy {
   }
 
   goMosaic() {
+    clearTimeout(this.singleRetryTimer);
+    // Bump revision so the single <img> gets a fresh URL, forcing the
+    // browser to abort the old single-camera connection immediately.
+    this.streamRevision.update((v) => v + 1);
     this.viewMode.set('mosaic');
   }
 
   goSingle(index: number) {
     this.selectedCamera.set(index);
+    // Bump revision to abort the old mosaic connection cleanly.
+    this.streamRevision.update((v) => v + 1);
     this.viewMode.set('single');
+    // Auto-retry: if the MJPEG stream doesn't deliver a frame within 3 s
+    // (e.g. because of transient black-frame filtering on the backend),
+    // bump streamRevision to force the <img> to reconnect.
+    clearTimeout(this.singleRetryTimer);
+    this.singleRetryTimer = setTimeout(() => {
+      const img = document.querySelector<HTMLImageElement>(
+        'img[alt="Stream"]'
+      );
+      if (img && (!img.naturalWidth || img.naturalWidth === 0)) {
+        this.streamRevision.update((v) => v + 1);
+      }
+    }, 3000);
   }
 
   nextCamera() {
