@@ -12,18 +12,21 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import * as L from 'leaflet';
 import { StreamService } from '../../core/services/stream.service';
+import { AlertService } from '../../core/services/alert.service';
+import { FaceSidebarComponent } from '../../shared/face-sidebar/face-sidebar.component';
 import {
   StreamStatusResponse,
   RtspSource,
   RtspSourceCreate,
 } from '../../core/models/stream.model';
+import { FaceDisplayMode } from '../../core/models/alert.model';
 
 export type ViewMode = 'mosaic' | 'single';
 type HeightPreset = 'basement' | 'ceiling' | 'wall-high' | 'wall-mid' | 'turnstile' | 'custom';
 
 @Component({
   selector: 'app-stream',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FaceSidebarComponent],
   templateUrl: './stream.html',
   styles: [`
     .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -34,6 +37,16 @@ type HeightPreset = 'basement' | 'ceiling' | 'wall-high' | 'wall-mid' | 'turnsti
 })
 export class StreamComponent implements OnInit, OnDestroy {
   private streamService = inject(StreamService);
+  readonly alertService = inject(AlertService);
+
+  /** Face display mode: realtime (OSD names), hybrid (boxes + list), list (list only) */
+  readonly faceDisplayMode = this.alertService.faceDisplayMode;
+  readonly showFaceSidebar = computed(() => this.faceDisplayMode() !== 'realtime' && this.showStream());
+  readonly faceDisplayModes: Array<{ value: FaceDisplayMode; label: string; icon: string }> = [
+    { value: 'realtime', label: 'Nombres en Video', icon: 'TV' },
+    { value: 'hybrid', label: 'Híbrido', icon: 'HY' },
+    { value: 'list', label: 'Solo Lista', icon: 'LI' },
+  ];
 
   @ViewChild('addMapDiv') addMapDiv?: ElementRef<HTMLDivElement>;
   @ViewChild('largeMapDiv') largeMapDiv?: ElementRef<HTMLDivElement>;
@@ -201,6 +214,8 @@ export class StreamComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.refreshStatus();
     this.loadSources();
+    this.alertService.loadFaceDisplayMode();
+    this.alertService.connectSSE();
   }
 
   ngOnDestroy(): void {
@@ -287,6 +302,10 @@ export class StreamComponent implements OnInit, OnDestroy {
       this.streamRevision.update((v) => v + 1);
     }
     this.showStream.update((v) => !v);
+  }
+
+  setFaceDisplayMode(mode: FaceDisplayMode): void {
+    this.alertService.setFaceDisplayMode(mode);
   }
 
   goMosaic() {

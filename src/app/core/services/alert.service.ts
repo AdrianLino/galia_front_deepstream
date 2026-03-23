@@ -6,11 +6,14 @@ import {
   AlertEventList,
   AlertLevel,
   AlertSSEPayload,
+  FaceDisplayMode,
+  FaceIdentifiedPayload,
   WatchlistResponse,
 } from '../models/alert.model';
 import { environment } from '../../../environments/environment';
 
 const API = `${environment.apiV1}/alerts`;
+const STREAM_API = `${environment.apiV1}/stream`;
 
 @Injectable({ providedIn: 'root' })
 export class AlertService {
@@ -34,6 +37,12 @@ export class AlertService {
 
   /** Whether SSE is connected. */
   readonly connected = signal(false);
+
+  /** Face identifications received via SSE (newest first, max 200). */
+  readonly identifications = signal<FaceIdentifiedPayload[]>([]);
+
+  /** Current face display mode. */
+  readonly faceDisplayMode = signal<FaceDisplayMode>('realtime');
 
   private eventSource: EventSource | null = null;
   private toastTimers = new Map<number, ReturnType<typeof setTimeout>>();
@@ -139,13 +148,20 @@ export class AlertService {
     this.eventSource.onmessage = (event) => {
       this.zone.run(() => {
         try {
-          const payload: AlertSSEPayload = JSON.parse(event.data);
-          // Store in history
-          const current = this.liveAlerts();
-          this.liveAlerts.set([payload, ...current].slice(0, 100));
-          this.unreadCount.update((c) => c + 1);
-          // Show as toast popup
-          this.pushToast(payload);
+          const data = JSON.parse(event.data);
+          if (data.event_type === 'face_identified') {
+            // Face identification event → add to identifications list
+            const payload: FaceIdentifiedPayload = data;
+            const current = this.identifications();
+            this.identifications.set([payload, ...current].slice(0, 200));
+          } else {
+            // Alert event → existing behavior
+            const payload: AlertSSEPayload = data;
+            const current = this.liveAlerts();
+            this.liveAlerts.set([payload, ...current].slice(0, 100));
+            this.unreadCount.update((c) => c + 1);
+            this.pushToast(payload);
+          }
         } catch {
           // ignore malformed messages
         }
@@ -169,5 +185,30 @@ export class AlertService {
 
   markRead(): void {
     this.unreadCount.set(0);
+  }
+
+  // ── Face display mode ─────────────────────────────────────────────────
+
+  loadFaceDisplayMode(): void {
+    this.http.get<{ mode: FaceDisplayMode }>(`${STREAM_API}/face-display-mode`).subscribe({
+      next: (res) => this.faceDisplayMode.set(res.mode),
+      error: () => {},
+    });
+  }
+
+  setFaceDisplayMode(mode: FaceDisplayMode): void {
+    this.faceDisplayMode.set(mode);
+    this.http.put(`${STREAM_API}/face-display-mode`, { mode }).subscribe({
+      error: () => {},
+    });
+  }
+
+  /** Build URL for an identification thumbnail. */
+  identificationThumbnailUrl(filename: string): string {
+    return `${STREAM_API}/identifications/thumbnail/${filename}`;
+  }
+
+  clearIdentifications(): void {
+    this.identifications.set([]);
   }
 }

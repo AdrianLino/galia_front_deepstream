@@ -45,3 +45,18 @@ export interface WatchlistPerson {
   created_at: string;
   updated_at: string;
 }
+
+// ── Face display mode & identification events ──────────────────────────────
+
+export type FaceDisplayMode = 'realtime' | 'hybrid' | 'list';
+
+export interface FaceIdentifiedPayload {
+  event_type: 'face_identified';
+  track_id: number;
+  person_name: string;
+  confidence: number;
+  camera_name: string | null;
+  source_id: number;
+  thumbnail: string | null;
+  timestamp: string;
+}
