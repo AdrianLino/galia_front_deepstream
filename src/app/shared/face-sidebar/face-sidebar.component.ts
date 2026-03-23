@@ -48,12 +48,14 @@ import { FaceIdentifiedPayload } from '../../core/models/alert.model';
         } @else {
           @for (item of identifications(); track item.track_id + '_' + item.timestamp) {
             <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-700/30 hover:bg-gray-750 transition-colors"
-                 [class.bg-red-900/10]="item.person_name === 'Desconocido'">
+                 [class.bg-red-900/10]="item.person_name === 'Desconocido'"
+                 [class.bg-yellow-900/10]="item.person_name.startsWith('~')">
 
               <!-- Thumbnail -->
               <div class="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-gray-700 border border-gray-600/50">
                 @if (item.thumbnail) {
                   <img [src]="alertService.identificationThumbnailUrl(item.thumbnail)"
+                       (error)="$event.target.style.display='none'"
                        class="w-full h-full object-cover" alt="" />
                 } @else {
                   <div class="w-full h-full flex items-center justify-center">
@@ -68,11 +70,12 @@ import { FaceIdentifiedPayload } from '../../core/models/alert.model';
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2">
                   <span class="text-sm font-semibold truncate"
-                    [class.text-white]="item.person_name !== 'Desconocido'"
-                    [class.text-red-400]="item.person_name === 'Desconocido'">
-                    {{ item.person_name }}
+                    [class.text-white]="!isUnknown(item.person_name)"
+                    [class.text-red-400]="item.person_name === 'Desconocido'"
+                    [class.text-yellow-400]="item.person_name.startsWith('~')">
+                    {{ displayName(item.person_name) }}
                   </span>
-                  @if (item.person_name !== 'Desconocido') {
+                  @if (!isUnknown(item.person_name)) {
                     <span class="w-2 h-2 rounded-full flex-shrink-0"
                       [class.bg-green-400]="item.confidence >= 0.6"
                       [class.bg-yellow-400]="item.confidence >= 0.4 && item.confidence < 0.6"
@@ -84,7 +87,7 @@ import { FaceIdentifiedPayload } from '../../core/models/alert.model';
                   <span>{{ item.camera_name || 'Cam' + item.source_id }}</span>
                   <span>&middot;</span>
                   <span>{{ formatTime(item.timestamp) }}</span>
-                  @if (item.person_name !== 'Desconocido') {
+                  @if (!isUnknown(item.person_name)) {
                     <span>&middot;</span>
                     <span class="text-blue-400">{{ (item.confidence * 100).toFixed(0) }}%</span>
                   }
@@ -121,5 +124,16 @@ export class FaceSidebarComponent {
     } catch {
       return '';
     }
+  }
+
+  isUnknown(name: string): boolean {
+    return name === 'Desconocido' || name.startsWith('~');
+  }
+
+  displayName(name: string): string {
+    if (name.startsWith('~')) {
+      return name.substring(1) + ' ?';
+    }
+    return name;
   }
 }
