@@ -38,5 +38,9 @@ export const routes: Routes = [
     path: 'settings',
     loadComponent: () => import('./pages/settings/settings').then((m) => m.SettingsComponent),
   },
+  {
+    path: 'face-history',
+    loadComponent: () => import('./pages/face-history/face-history').then((m) => m.FaceHistoryComponent),
+  },
   { path: '**', redirectTo: 'dashboard' },
 ];

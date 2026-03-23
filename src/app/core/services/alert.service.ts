@@ -150,10 +150,18 @@ export class AlertService {
         try {
           const data = JSON.parse(event.data);
           if (data.event_type === 'face_identified') {
-            // Face identification event → add to identifications list
+            // Face identification event → add or update in identifications list
             const payload: FaceIdentifiedPayload = data;
             const current = this.identifications();
-            this.identifications.set([payload, ...current].slice(0, 200));
+            // If same track_id exists, replace it (e.g. Desconocido → identified)
+            const idx = current.findIndex(item => item.track_id === payload.track_id);
+            if (idx >= 0) {
+              const updated = [...current];
+              updated.splice(idx, 1);
+              this.identifications.set([payload, ...updated].slice(0, 200));
+            } else {
+              this.identifications.set([payload, ...current].slice(0, 200));
+            }
           } else {
             // Alert event → existing behavior
             const payload: AlertSSEPayload = data;

@@ -54,6 +54,11 @@ import { AlertEvent } from '../../core/models/alert.model';
            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
            Geocercas
         </a>
+        <a routerLink="/face-history" routerLinkActive="bg-indigo-600 text-white shadow-md shadow-indigo-900/20"
+           class="px-4 py-1.5 rounded-lg text-sm font-semibold text-gray-400 hover:text-white hover:bg-gray-700/50 transition-all flex items-center gap-2">
+           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+           Historial
+        </a>
       </div>
 
       <!-- Right Side: Alert Bell + User -->
