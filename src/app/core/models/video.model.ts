@@ -18,6 +18,8 @@ export interface VideoStatus {
   error_message?: string;
   download_url?: string;
   events_url?: string;
+  phase?: string;
+  progress_pct?: number;
 }
 
 export interface ForensicEvent {
@@ -62,4 +64,27 @@ export interface AskResponse {
   question: string;
   answer: string;
   context_segments: number;
+}
+
+export interface VlmModel {
+  id: string;
+  label: string;
+  description: string;
+  path: string;
+  type: string;
+  vram_gb: number;
+  active: boolean;
+  selected?: boolean;
+}
+
+export interface VlmModelsResponse {
+  models: VlmModel[];
+  active_model: VlmModel | null;
+  selected_model_id?: string | null;
+}
+
+export interface VlmSwitchResponse {
+  ok: boolean;
+  message: string;
+  model: VlmModel | null;
 }

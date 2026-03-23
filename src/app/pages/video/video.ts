@@ -8,6 +8,7 @@ import {
   VideoEventsResponse,
   VideoListItem,
   VideoStatus,
+  VlmModel,
 } from '../../core/models/video.model';
 
 @Component({
@@ -48,8 +49,16 @@ export class VideoComponent implements OnInit, OnDestroy {
   // Delete
   deleteMsg = signal<string | null>(null);
 
+  // VLM Model selector
+  vlmModels = signal<VlmModel[]>([]);
+  vlmActive = signal<VlmModel | null>(null);
+  vlmSelectedId = signal<string | null>(null);
+  vlmSwitching = signal(false);
+  vlmMsg = signal<string | null>(null);
+
   ngOnInit() {
     this.loadList();
+    this.loadVlmModels();
   }
 
   ngOnDestroy() {
@@ -124,7 +133,7 @@ export class VideoComponent implements OnInit, OnDestroy {
           }
         },
       });
-    }, 5000);
+    }, 2000);
   }
 
   stopPolling() {
@@ -199,5 +208,37 @@ export class VideoComponent implements OnInit, OnDestroy {
     if (status === 'done') return 'text-green-400';
     if (status === 'error') return 'text-red-400';
     return 'text-yellow-400';
+  }
+
+  // ── VLM Model management ────────────────────────
+
+  loadVlmModels() {
+    this.videoService.vlmModels().subscribe({
+      next: (res) => {
+        this.vlmModels.set(res.models);
+        this.vlmActive.set(res.active_model);
+        this.vlmSelectedId.set(res.selected_model_id ?? null);
+      },
+    });
+  }
+
+  switchModel(modelId: string) {
+    if (this.vlmSwitching()) return;
+    this.vlmSwitching.set(true);
+    this.vlmMsg.set(null);
+    this.videoService.vlmSwitch(modelId).subscribe({
+      next: (res) => {
+        this.vlmSwitching.set(false);
+        this.vlmMsg.set(res.message);
+        this.vlmSelectedId.set(modelId);
+        this.loadVlmModels();
+        setTimeout(() => this.vlmMsg.set(null), 4000);
+      },
+      error: (err) => {
+        this.vlmSwitching.set(false);
+        this.vlmMsg.set(err?.error?.detail ?? 'Error al seleccionar modelo.');
+        setTimeout(() => this.vlmMsg.set(null), 4000);
+      },
+    });
   }
 }

@@ -7,6 +7,8 @@ import {
   VideoEventsResponse,
   VideoListResponse,
   VideoStatus,
+  VlmModelsResponse,
+  VlmSwitchResponse,
 } from '../models/video.model';
 
 const API = 'http://localhost:8001/api/v1';
@@ -43,5 +45,13 @@ export class VideoService {
 
   downloadUrl(videoId: number): string {
     return `${API}/video/${videoId}/download`;
+  }
+
+  vlmModels(): Observable<VlmModelsResponse> {
+    return this.http.get<VlmModelsResponse>(`${API}/video/vlm/models`);
+  }
+
+  vlmSwitch(modelId: string): Observable<VlmSwitchResponse> {
+    return this.http.post<VlmSwitchResponse>(`${API}/video/vlm/switch`, { model_id: modelId });
   }
 }

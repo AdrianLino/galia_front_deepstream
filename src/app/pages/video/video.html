@@ -47,6 +47,40 @@
         </div>
       </div>
 
+      <!-- VLM Model Selector -->
+      @if (vlmModels().length > 0) {
+        <div class="bg-gray-800/40 border border-gray-700/50 rounded-xl p-5">
+          <h2 class="font-semibold text-sm text-gray-300 mb-3 flex items-center gap-2">
+            <svg class="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            Modelo VLM
+          </h2>
+          <p class="text-[11px] text-gray-500 mb-3">Se carga automáticamente al procesar un video</p>
+          <div class="space-y-2">
+            @for (m of vlmModels(); track m.id) {
+              <button (click)="switchModel(m.id)"
+                      [disabled]="vlmSwitching() || m.id === vlmSelectedId()"
+                      class="w-full text-left rounded-lg p-3 transition-all border text-sm"
+                      [class]="m.id === vlmSelectedId()
+                        ? 'bg-purple-900/30 border-purple-500/50 text-purple-200'
+                        : 'bg-gray-900/50 border-gray-700/50 text-gray-300 hover:bg-gray-800 hover:border-gray-600'">
+                <div class="flex items-center justify-between">
+                  <span class="font-medium">{{ m.label }}</span>
+                  @if (m.id === vlmSelectedId()) {
+                    <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">Seleccionado</span>
+                  }
+                </div>
+                <p class="text-xs text-gray-500 mt-1">{{ m.description }}</p>
+              </button>
+            }
+          </div>
+          @if (vlmMsg()) {
+            <p class="mt-2 text-xs text-purple-400 bg-purple-900/20 p-2 rounded border border-purple-900/50">{{ vlmMsg() }}</p>
+          }
+        </div>
+      }
+
       <!-- Video List -->
       <div>
         <div class="flex items-center justify-between mb-4 px-1">
@@ -148,7 +182,7 @@
               <a [href]="downloadUrl(v.video_id)" target="_blank"
                  class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-green-600 text-white text-sm font-medium rounded-lg hover:from-emerald-500 hover:to-green-500 transition-all shadow-lg shadow-emerald-900/20 flex items-center gap-2">
                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                Descargar Info
+                Descargar
               </a>
             }
             <button (click)="deleteSelected()"
@@ -159,17 +193,49 @@
           </div>
         </div>
 
+        <!-- Video Player -->
+        @if (v.status === 'done') {
+          <div class="mb-8 rounded-xl overflow-hidden border border-gray-700/50 bg-black shadow-2xl">
+            <video controls class="w-full max-h-[480px]" preload="metadata"
+                   [src]="downloadUrl(v.video_id)">
+              Tu navegador no soporta el elemento de video.
+            </video>
+          </div>
+        }
+
         @if (v.status === 'processing') {
-          <div class="bg-yellow-900/20 border border-yellow-700/50 rounded-xl p-6 mb-8 flex items-center gap-4">
-            <div class="w-12 h-12 rounded-full bg-yellow-900/40 border border-yellow-500/30 flex items-center justify-center shrink-0">
-               <svg class="animate-spin h-6 w-6 text-yellow-400" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
+          <div class="bg-yellow-900/20 border border-yellow-700/50 rounded-xl p-6 mb-8">
+            <div class="flex items-center gap-4 mb-4">
+              <div class="w-10 h-10 rounded-full bg-yellow-900/40 border border-yellow-500/30 flex items-center justify-center shrink-0">
+                 <svg class="animate-spin h-5 w-5 text-yellow-400" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                 </svg>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center justify-between mb-1">
+                  <h3 class="text-yellow-400 font-semibold text-sm">Procesando video…</h3>
+                  <span class="text-yellow-300 font-mono text-sm">{{ v.progress_pct ?? 0 }}%</span>
+                </div>
+                <p class="text-xs text-yellow-500/70 mb-3">
+                  @switch (v.phase) {
+                    @case ('iniciando')   { Iniciando procesamiento… }
+                    @case ('deepstream')  { Detectando y rastreando rostros (DeepStream)… }
+                    @case ('render')      { Renderizando video con anotaciones… }
+                    @case ('forensic')    { Análisis forense con IA (VLM)… }
+                    @case ('finalizando') { Finalizando… }
+                    @default              { Procesando… }
+                  }
+                  @if (v.duration_seconds) {
+                    <span class="ml-2 text-yellow-500/50">· Duración: {{ formatTime(v.duration_seconds) }}</span>
+                  }
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 class="text-yellow-400 font-semibold mb-1">Análisis de IA en progreso...</h3>
-              <p class="text-sm text-yellow-500/70">Extrayendo embeddings, detectando objetos y estructurando eventos. El estado se actualiza automáticamente.</p>
+            <!-- Progress bar -->
+            <div class="w-full bg-gray-700/50 rounded-full h-2.5 overflow-hidden">
+              <div class="bg-gradient-to-r from-yellow-500 to-amber-400 h-full rounded-full transition-all duration-700 ease-out"
+                   [style.width.%]="v.progress_pct ?? 0"></div>
             </div>
           </div>
         }
