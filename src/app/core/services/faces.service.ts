@@ -32,10 +32,12 @@ export class FacesService {
     return `${API}/persons/${id}/photo`;
   }
 
-  register(name: string, imageFile: File): Observable<RegisterResponse> {
+  register(name: string, imageFile: File, alertLevel = 'normal', folderId: number | null = null): Observable<RegisterResponse> {
     const form = new FormData();
     form.append('name', name);
     form.append('image', imageFile);
+    form.append('alert_level', alertLevel);
+    if (folderId !== null) form.append('folder_id', String(folderId));
     return this.http.post<RegisterResponse>(`${API}/register`, form);
   }
 

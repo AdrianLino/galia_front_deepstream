@@ -325,6 +325,48 @@
               </div>
             </div>
 
+            <!-- Alert Level + Folder Row -->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2">Nivel de Riesgo</label>
+                <div class="flex gap-1.5">
+                  <button (click)="registerAlertLevel = 'normal'" 
+                          class="flex-1 py-2 rounded-lg text-xs font-bold border transition-all"
+                          [class]="registerAlertLevel === 'normal' ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-900/50 text-gray-500 border-gray-700 hover:bg-gray-800 hover:text-gray-300'">
+                    Normal
+                  </button>
+                  <button (click)="registerAlertLevel = 'watch'" 
+                          class="flex-1 py-2 rounded-lg text-xs font-bold border transition-all"
+                          [class]="registerAlertLevel === 'watch' ? 'bg-yellow-600 text-white border-yellow-500' : 'bg-gray-900/50 text-gray-500 border-gray-700 hover:bg-gray-800 hover:text-gray-300'">
+                    Vigilar
+                  </button>
+                  <button (click)="registerAlertLevel = 'critical'" 
+                          class="flex-1 py-2 rounded-lg text-xs font-bold border transition-all"
+                          [class]="registerAlertLevel === 'critical' ? 'bg-red-600 text-white border-red-500' : 'bg-gray-900/50 text-gray-500 border-gray-700 hover:bg-gray-800 hover:text-gray-300'">
+                    Crítico
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2">Carpeta</label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                  </div>
+                  <select [(ngModel)]="registerFolderId" 
+                          class="w-full bg-gray-900/80 text-white rounded-xl pl-9 pr-4 py-2.5 text-sm font-medium border border-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all appearance-none cursor-pointer">
+                    <option [ngValue]="null">Sin carpeta</option>
+                    @for (folder of folders(); track folder.id) {
+                      <option [ngValue]="folder.id">{{ folder.name }}</option>
+                    }
+                  </select>
+                  <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <svg class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div>
               <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2">Imagen Origen (JPEG/PNG) <span class="text-red-400">*</span></label>
               

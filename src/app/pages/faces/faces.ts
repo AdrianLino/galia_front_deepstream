@@ -91,6 +91,8 @@ export class FacesComponent implements OnInit, OnDestroy {
 
   // Register
   registerName = '';
+  registerAlertLevel: 'normal' | 'watch' | 'critical' = 'normal';
+  registerFolderId: number | null = null;
   registerFiles: File[] = [];
   isDragging = signal(false);
   registerLoading = signal(false);
@@ -356,11 +358,13 @@ export class FacesComponent implements OnInit, OnDestroy {
 
     // Si es un solo archivo
     if (this.registerFiles.length === 1) {
-      this.svc.register(this.registerName.trim(), this.registerFiles[0]).subscribe({
+      this.svc.register(this.registerName.trim(), this.registerFiles[0], this.registerAlertLevel, this.registerFolderId).subscribe({
         next: (res) => {
           this.registerMsg.set(`"${res.name}" registrado. Score detección: ${res.detection_score}`);
           this.registerLoading.set(false);
           this.registerName = '';
+          this.registerAlertLevel = 'normal';
+          this.registerFolderId = null;
           this.registerFiles = [];
           this.loadPersons();
         },
@@ -385,7 +389,7 @@ export class FacesComponent implements OnInit, OnDestroy {
         if (lastDot > 0) name = name.substring(0, lastDot);
         
         try {
-            await lastValueFrom(this.svc.register(name, file));
+            await lastValueFrom(this.svc.register(name, file, this.registerAlertLevel, this.registerFolderId));
             successCount++;
         } catch (e: any) {
             failCount++;
@@ -398,6 +402,8 @@ export class FacesComponent implements OnInit, OnDestroy {
     
     this.registerLoading.set(false);
     this.registerFiles = [];
+    this.registerAlertLevel = 'normal';
+    this.registerFolderId = null;
     this.batchProgress.set(0);
     this.batchTotal.set(0);
     this.loadPersons();
