@@ -4,8 +4,20 @@ export interface Person {
   image_path?: string;
   embedding_count: number;
   alert_level: 'normal' | 'watch' | 'critical';
+  folder_id?: number | null;
   created_at: string;
   updated_at?: string;
+}
+
+export interface PersonFolder {
+  id: number;
+  name: string;
+  created_at: string;
+}
+
+export interface FoldersListResponse {
+  total: number;
+  folders: PersonFolder[];
 }
 
 export interface PersonsListResponse {

@@ -160,7 +160,7 @@ export class StreamComponent implements OnInit, OnDestroy {
   editLoading = signal(false);
 
   // Groups
-  collapsedGroups = signal<Set<string>>(new Set());
+  expandedGroups = signal<Set<string>>(new Set());
 
   // Add-form map helpers
   private addMap?: L.Map;
@@ -449,7 +449,7 @@ export class StreamComponent implements OnInit, OnDestroy {
 
   // ── Group methods ─────────────────────────────────────────────────────────
   toggleGroup(name: string) {
-    this.collapsedGroups.update((set) => {
+    this.expandedGroups.update((set) => {
       const next = new Set(set);
       next.has(name) ? next.delete(name) : next.add(name);
       return next;
@@ -457,7 +457,7 @@ export class StreamComponent implements OnInit, OnDestroy {
   }
 
   isGroupCollapsed(name: string): boolean {
-    return this.collapsedGroups().has(name);
+    return !this.expandedGroups().has(name);
   }
 
   selectGroup(cameras: RtspSource[]) {

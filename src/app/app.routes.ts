@@ -15,10 +15,6 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/faces/faces').then((m) => m.FacesComponent),
   },
   {
-    path: 'nvr',
-    loadComponent: () => import('./pages/nvr/nvr').then((m) => m.NvrComponent),
-  },
-  {
     path: 'video',
     loadComponent: () => import('./pages/video/video').then((m) => m.VideoComponent),
   },

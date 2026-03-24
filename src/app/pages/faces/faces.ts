@@ -1,10 +1,10 @@
-import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { lastValueFrom } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FacesService } from '../../core/services/faces.service';
 import { AlertService } from '../../core/services/alert.service';
-import { FaceResult, IdentifyResponse, Person } from '../../core/models/face.model';
+import { FaceResult, IdentifyResponse, Person, PersonFolder } from '../../core/models/face.model';
 
 type Tab = 'persons' | 'register' | 'identify';
 
@@ -30,6 +30,16 @@ export class FacesComponent implements OnInit, OnDestroy {
   listLoading = signal(false);
   private personsByName = new Map<string, Person>();
 
+  // Folders
+  folders = signal<PersonFolder[]>([]);
+  selectedFolderId = signal<number | null | 'all'>('all'); // 'all' = show all, null = sin carpeta
+  folderCreating = signal(false);
+  newFolderName = '';
+  showNewFolderInput = signal(false);
+  editingFolderId = signal<number | null>(null);
+  editingFolderName = '';
+  moveMenuPersonId = signal<string | null>(null); // person whose move menu is open
+
   // Pagination for persons
   searchQuery = signal('');
   readonly pageSize = 18; // 3 rows of 6 cols
@@ -37,8 +47,14 @@ export class FacesComponent implements OnInit, OnDestroy {
 
   filteredPersons = computed(() => {
     const q = this.searchQuery().toLowerCase().trim();
-    if (!q) return this.persons();
-    return this.persons().filter((p) => p.name.toLowerCase().includes(q));
+    let list = this.persons();
+    // Apply folder filter
+    const fid = this.selectedFolderId();
+    if (fid !== 'all') {
+      list = list.filter((p) => (p.folder_id ?? null) === fid);
+    }
+    if (!q) return list;
+    return list.filter((p) => p.name.toLowerCase().includes(q));
   });
 
   totalPages = computed(() =>
@@ -97,8 +113,14 @@ export class FacesComponent implements OnInit, OnDestroy {
   isExpanded = signal<boolean>(false);
   Math = Math; // To use Math in template
 
+  @HostListener('document:click')
+  onDocumentClick() {
+    this.moveMenuPersonId.set(null);
+  }
+
   ngOnInit() {
     this.loadPersons();
+    this.loadFolders();
   }
 
   ngOnDestroy() {
@@ -134,6 +156,98 @@ export class FacesComponent implements OnInit, OnDestroy {
   /** Returns the registered Person for a matched face name, or null. */
   matchedPerson(faceName: string): Person | null {
     return this.personsByName.get(faceName.toLowerCase()) ?? null;
+  }
+
+  // ── Folders ─────────────────────────────────────────────────────────────────
+
+  loadFolders() {
+    this.svc.listFolders().subscribe({
+      next: (res) => this.folders.set(res.folders),
+    });
+  }
+
+  selectFolder(folderId: number | null | 'all') {
+    this.selectedFolderId.set(folderId);
+    this.currentPage.set(1);
+  }
+
+  folderPersonCount(folderId: number | null): number {
+    return this.persons().filter((p) => (p.folder_id ?? null) === folderId).length;
+  }
+
+  startNewFolder() {
+    this.showNewFolderInput.set(true);
+    this.newFolderName = '';
+  }
+
+  cancelNewFolder() {
+    this.showNewFolderInput.set(false);
+    this.newFolderName = '';
+  }
+
+  createFolder() {
+    const name = this.newFolderName.trim();
+    if (!name) return;
+    this.folderCreating.set(true);
+    this.svc.createFolder(name).subscribe({
+      next: () => {
+        this.folderCreating.set(false);
+        this.showNewFolderInput.set(false);
+        this.newFolderName = '';
+        this.loadFolders();
+      },
+      error: (err) => {
+        alert(err?.error?.detail ?? 'Error al crear carpeta.');
+        this.folderCreating.set(false);
+      },
+    });
+  }
+
+  startEditFolder(folder: PersonFolder, event: Event) {
+    event.stopPropagation();
+    this.editingFolderId.set(folder.id);
+    this.editingFolderName = folder.name;
+  }
+
+  cancelEditFolder() {
+    this.editingFolderId.set(null);
+    this.editingFolderName = '';
+  }
+
+  saveEditFolder(folder: PersonFolder) {
+    const name = this.editingFolderName.trim();
+    if (!name || name === folder.name) { this.cancelEditFolder(); return; }
+    this.svc.renameFolder(folder.id, name).subscribe({
+      next: () => { this.cancelEditFolder(); this.loadFolders(); },
+      error: (err) => alert(err?.error?.detail ?? 'Error al renombrar carpeta.'),
+    });
+  }
+
+  deleteFolder(folder: PersonFolder, event: Event) {
+    event.stopPropagation();
+    if (!confirm(`¿Eliminar carpeta "${folder.name}"? Las personas dentro quedarán sin carpeta.`)) return;
+    this.svc.deleteFolder(folder.id).subscribe({
+      next: () => {
+        if (this.selectedFolderId() === folder.id) this.selectedFolderId.set('all');
+        this.loadFolders();
+        this.loadPersons();
+      },
+      error: (err) => alert(err?.error?.detail ?? 'Error al eliminar carpeta.'),
+    });
+  }
+
+  toggleMoveMenu(personId: string, event: Event) {
+    event.stopPropagation();
+    this.moveMenuPersonId.set(this.moveMenuPersonId() === personId ? null : personId);
+  }
+
+  movePersonToFolder(person: Person, folderId: number | null) {
+    this.moveMenuPersonId.set(null);
+    if ((person.folder_id ?? null) === folderId) return;
+    this.svc.moveToFolder(person.id, folderId).subscribe({
+      next: () => this.loadPersons(),
+      error: (err) => alert(err?.error?.detail ?? 'Error al mover persona.'),
+    });
   }
 
   // ── Edit ────────────────────────────────────────────────────────────────────

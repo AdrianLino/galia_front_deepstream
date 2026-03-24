@@ -375,18 +375,29 @@
 
           <!-- Cameras in current node -->
           @if (cameras().length > 0) {
-            <div class="px-4 py-2 border-b border-gray-700/30">
-              <p class="text-[10px] font-semibold tracking-wider text-gray-500 uppercase mb-1.5">Cámaras ({{ cameras().length }})</p>
-              @for (cam of cameras(); track cam.id) {
-                <div class="flex items-center justify-between py-1.5 group">
-                  <div class="flex items-center gap-2 min-w-0">
-                    <span class="text-sm">📹</span>
-                    <span class="text-xs text-gray-300 truncate">{{ cam.name }}</span>
-                  </div>
-                  <button (click)="unassignCamera(cam)"
-                          class="text-[10px] text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all shrink-0">
-                    desasignar
-                  </button>
+            <div class="border-b border-gray-700/30">
+              <button (click)="parentCamerasExpanded.set(!parentCamerasExpanded())"
+                      class="w-full flex items-center justify-between px-4 py-2 hover:bg-gray-700/20 transition-colors">
+                <p class="text-[10px] font-semibold tracking-wider text-gray-500 uppercase">📹 Cámaras ({{ cameras().length }})</p>
+                <svg class="w-3.5 h-3.5 text-gray-500 transition-transform" [class.rotate-180]="parentCamerasExpanded()"
+                     fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </button>
+              @if (parentCamerasExpanded()) {
+                <div class="px-4 pb-2">
+                  @for (cam of cameras(); track cam.id) {
+                    <div class="flex items-center justify-between py-1.5 group">
+                      <div class="flex items-center gap-2 min-w-0">
+                        <span class="text-sm">📹</span>
+                        <span class="text-xs text-gray-300 truncate">{{ cam.name }}</span>
+                      </div>
+                      <button (click)="unassignCamera(cam)"
+                              class="text-[10px] text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                        desasignar
+                      </button>
+                    </div>
+                  }
                 </div>
               }
             </div>

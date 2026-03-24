@@ -119,6 +119,9 @@ export class GeocercasComponent implements OnInit, OnDestroy {
   /** Which node card is expanded in the list. */
   expandedNodeId = signal<string | null>(null);
 
+  /** Whether the parent-level cameras section is expanded. */
+  parentCamerasExpanded = signal(false);
+
   // ── Edit camera state ──────────────────────────────────────────────────
   editingCamera = signal<RtspSource | null>(null);
   showEditCamera = signal(false);
@@ -244,8 +247,8 @@ export class GeocercasComponent implements OnInit, OnDestroy {
   loadNodeCameras(): void {
     const parentId = this.currentParentId();
     const parentTipo = this.breadcrumb().at(-1)?.tipo;
-    // Cameras are only visible from PISO level and deeper (not at EDIFICIO/EXTERIOR)
-    const showCameras = parentTipo === 'PISO' || parentTipo === 'ZONA_INTERNA';
+    // Cameras are visible from EDIFICIO level and deeper (covers EDIFICIO→ZONA_INTERNA without PISO)
+    const showCameras = parentTipo === 'EDIFICIO' || parentTipo === 'PISO' || parentTipo === 'ZONA_INTERNA';
 
     if (parentId && showCameras) {
       // Direct cameras for the sidebar panel

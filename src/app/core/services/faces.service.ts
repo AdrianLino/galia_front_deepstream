@@ -3,8 +3,10 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   DeleteResponse,
+  FoldersListResponse,
   IdentifyResponse,
   Person,
+  PersonFolder,
   PersonsListResponse,
   RegisterResponse,
   RenameResponse,
@@ -49,5 +51,27 @@ export class FacesService {
     const form = new FormData();
     form.append('image', imageFile);
     return this.http.post<IdentifyResponse>(`${API}/identify`, form);
+  }
+
+  // ── Folders ──────────────────────────────────────────────────────────────
+
+  listFolders(): Observable<FoldersListResponse> {
+    return this.http.get<FoldersListResponse>(`${API}/folders`);
+  }
+
+  createFolder(name: string): Observable<PersonFolder> {
+    return this.http.post<PersonFolder>(`${API}/folders`, { name });
+  }
+
+  renameFolder(id: number, name: string): Observable<PersonFolder> {
+    return this.http.put<PersonFolder>(`${API}/folders/${id}`, { name });
+  }
+
+  deleteFolder(id: number): Observable<any> {
+    return this.http.delete(`${API}/folders/${id}`);
+  }
+
+  moveToFolder(personId: string, folderId: number | null): Observable<Person> {
+    return this.http.put<Person>(`${API}/persons/${personId}/folder`, { folder_id: folderId });
   }
 }
