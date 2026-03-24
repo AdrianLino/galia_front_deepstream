@@ -69,6 +69,7 @@ export class StreamComponent implements OnInit, OnDestroy {
 
   private retryTimer?: ReturnType<typeof setTimeout>;
   private singleRetryTimer?: ReturnType<typeof setTimeout>;
+  private switchDebounceTimer?: ReturnType<typeof setTimeout>;
 
   // ── Saved RTSP sources ────────────────────────────────────────────────────
   sources = signal<RtspSource[]>([]);
@@ -226,6 +227,7 @@ export class StreamComponent implements OnInit, OnDestroy {
     this.addMapMarker = undefined;
     this.largeMapMarker = undefined;
     clearTimeout(this.singleRetryTimer);
+    clearTimeout(this.switchDebounceTimer);
   }
 
   // ── Pipeline methods ──────────────────────────────────────────────────────
@@ -317,34 +319,41 @@ export class StreamComponent implements OnInit, OnDestroy {
   }
 
   goSingle(index: number) {
-    this.selectedCamera.set(index);
-    // Bump revision to abort the old mosaic connection cleanly.
-    this.streamRevision.update((v) => v + 1);
-    this.viewMode.set('single');
-    // Auto-retry: if the MJPEG stream doesn't deliver a frame within 3 s
-    // (e.g. because of transient black-frame filtering on the backend),
-    // bump streamRevision to force the <img> to reconnect.
     clearTimeout(this.singleRetryTimer);
-    this.singleRetryTimer = setTimeout(() => {
-      const img = document.querySelector<HTMLImageElement>(
-        'img[alt="Stream"]'
-      );
-      if (img && (!img.naturalWidth || img.naturalWidth === 0)) {
-        this.streamRevision.update((v) => v + 1);
-      }
-    }, 3000);
+    clearTimeout(this.switchDebounceTimer);
+
+    // Update UI immediately (highlight active button)
+    this.selectedCamera.set(index);
+    this.viewMode.set('single');
+
+    // Debounce the actual stream URL change to avoid flooding the server
+    // with MJPEG connections when the user clicks rapidly.
+    this.switchDebounceTimer = setTimeout(() => {
+      this.streamRevision.update((v) => v + 1);
+
+      // Auto-retry: if the MJPEG stream doesn't deliver a frame within 3 s,
+      // bump streamRevision to force the <img> to reconnect.
+      this.singleRetryTimer = setTimeout(() => {
+        const img = document.querySelector<HTMLImageElement>(
+          'img[alt="Stream"]'
+        );
+        if (img && (!img.naturalWidth || img.naturalWidth === 0)) {
+          this.streamRevision.update((v) => v + 1);
+        }
+      }, 3000);
+    }, 250);
   }
 
   nextCamera() {
     const total = this.cameraIndices().length;
     if (total === 0) return;
-    this.selectedCamera.update((c) => (c + 1) % total);
+    this.goSingle((this.selectedCamera() + 1) % total);
   }
 
   prevCamera() {
     const total = this.cameraIndices().length;
     if (total === 0) return;
-    this.selectedCamera.update((c) => (c - 1 + total) % total);
+    this.goSingle((this.selectedCamera() - 1 + total) % total);
   }
 
   /** Click on the mosaic image to jump to a single camera */
