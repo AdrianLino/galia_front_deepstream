@@ -14,14 +14,14 @@ interface SectionInfo {
   selector: 'app-settings',
   imports: [CommonModule],
   template: `
-    <div class="min-h-screen bg-gray-950 text-white p-8">
-      <div class="max-w-5xl mx-auto">
+    <div class="h-[calc(100vh-3rem)] overflow-y-auto bg-gray-950 text-white p-3">
+      <div>
 
         <!-- Header -->
-        <div class="mb-8">
-          <h1 class="text-3xl font-black tracking-tight flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center">
-              <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="mb-4">
+          <h1 class="text-lg font-black tracking-tight flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center">
+              <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -29,29 +29,29 @@ interface SectionInfo {
             </div>
             Configuración
           </h1>
-          <p class="text-gray-400 mt-1">Importar y exportar datos del sistema</p>
+          <p class="text-gray-400 text-xs mt-0.5">Importar y exportar datos del sistema</p>
         </div>
 
         <!-- ═══ FULL BACKUP ═══ -->
-        <div class="bg-gray-900 border border-gray-700/50 rounded-2xl p-6 mb-8">
-          <div class="flex items-center justify-between mb-4">
+        <div class="bg-gray-900 border border-gray-700/50 rounded-xl p-4 mb-4">
+          <div class="flex items-center justify-between mb-3">
             <div>
-              <h2 class="text-xl font-bold flex items-center gap-2">
+              <h2 class="text-sm font-bold flex items-center gap-1.5">
                 <svg class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/>
                 </svg>
                 Backup Completo
               </h2>
-              <p class="text-sm text-gray-400 mt-0.5">Exportar o importar todos los datos del sistema en un solo archivo ZIP</p>
+              <p class="text-xs text-gray-400 mt-0.5">Exportar o importar todos los datos en un ZIP</p>
             </div>
           </div>
 
-          <div class="flex gap-3">
+          <div class="flex gap-2">
             <!-- Export All -->
             <button (click)="exportAll()"
                     [disabled]="exporting()"
-                    class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all
+                    class="flex items-center gap-1.5 px-4 py-2 rounded-lg font-semibold text-xs transition-all
                            bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-900/30">
               @if (exporting()) {
                 <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -67,7 +67,7 @@ interface SectionInfo {
             <!-- Import All -->
             <button (click)="importInput.click()"
                     [disabled]="importing()"
-                    class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all
+                    class="flex items-center gap-1.5 px-4 py-2 rounded-lg font-semibold text-xs transition-all
                            bg-gray-700 hover:bg-gray-600 border border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">
               @if (importing()) {
                 <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -85,7 +85,7 @@ interface SectionInfo {
 
           <!-- Status message -->
           @if (statusMsg()) {
-            <div class="mt-4 px-4 py-2.5 rounded-lg text-sm font-medium"
+            <div class="mt-3 px-3 py-2 rounded-lg text-xs font-medium"
                  [class]="statusOk() ? 'bg-green-500/10 text-green-400 border border-green-500/30'
                                       : 'bg-red-500/10 text-red-400 border border-red-500/30'">
               {{ statusMsg() }}
@@ -94,7 +94,7 @@ interface SectionInfo {
         </div>
 
         <!-- ═══ PER-SECTION ═══ -->
-        <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+        <h2 class="text-sm font-bold mb-3 flex items-center gap-1.5">
           <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
@@ -102,17 +102,17 @@ interface SectionInfo {
           Exportar / Importar por Sección
         </h2>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           @for (sec of sections; track sec.key) {
-            <div class="bg-gray-900 border border-gray-700/50 rounded-xl p-5 hover:border-gray-600 transition-colors">
-              <div class="flex items-start gap-3 mb-4">
-                <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+            <div class="bg-gray-900 border border-gray-700/50 rounded-lg p-3 hover:border-gray-600 transition-colors">
+              <div class="flex items-start gap-2 mb-3">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                      [style.background]="sec.color + '22'"
                      [style.color]="sec.color">
-                  <span class="text-xl" [innerHTML]="sec.icon"></span>
+                  <span class="text-lg" [innerHTML]="sec.icon"></span>
                 </div>
                 <div>
-                  <h3 class="font-bold text-base">{{ sec.label }}</h3>
+                  <h3 class="font-bold text-xs">{{ sec.label }}</h3>
                   <p class="text-xs text-gray-400 mt-0.5">{{ sec.desc }}</p>
                 </div>
               </div>
@@ -163,8 +163,8 @@ interface SectionInfo {
         </div>
 
         <!-- File structure legend -->
-        <div class="mt-8 bg-gray-900/50 border border-gray-800 rounded-xl p-5">
-          <h3 class="text-sm font-bold text-gray-300 mb-3">Estructura del archivo exportado</h3>
+        <div class="mt-4 bg-gray-900/50 border border-gray-800 rounded-lg p-3">
+          <h3 class="text-xs font-bold text-gray-300 mb-2">Estructura del archivo exportado</h3>
           <pre class="text-xs text-gray-500 font-mono leading-relaxed">backup_YYYYMMDD_HHMMSS/
 ├── manifest.json
 ├── personas/

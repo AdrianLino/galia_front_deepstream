@@ -7,7 +7,7 @@ import { AlertEvent } from '../../core/models/alert.model';
   selector: 'app-nav',
   imports: [RouterLink, RouterLinkActive],
   template: `
-    <nav class="sticky top-0 z-50 bg-gray-900/80 backdrop-blur-md border-b border-gray-700/50 shadow-lg px-6 py-3 flex items-center justify-between transition-all w-full h-16">
+    <nav class="sticky top-0 z-50 bg-gray-900/80 backdrop-blur-md border-b border-gray-700/50 shadow-lg px-4 py-1.5 flex items-center justify-between transition-all w-full h-12">
       
       <!-- Logo Section -->
       <div class="flex items-center gap-3">

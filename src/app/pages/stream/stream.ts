@@ -52,6 +52,11 @@ export class StreamComponent implements OnInit, OnDestroy {
   @ViewChild('largeMapDiv') largeMapDiv?: ElementRef<HTMLDivElement>;
   @ViewChild('interiorPicker') interiorPicker?: ElementRef<HTMLDivElement>;
 
+  // ── Layout state ───────────────────────────────────────────────────────────
+  sidebarCollapsed = signal(false);
+  videoFullscreen = signal(false);
+  @ViewChild('videoContainer') videoContainer?: ElementRef<HTMLDivElement>;
+
   // ── Pipeline state ────────────────────────────────────────────────────────
   status = signal<StreamStatusResponse | null>(null);
   loading = signal(false);
@@ -227,15 +232,21 @@ export class StreamComponent implements OnInit, OnDestroy {
     this.sources().filter((s) => this.selectedIds().has(s.id))
   );
 
+  private _onFullscreenChange = () => {
+    if (!document.fullscreenElement) this.videoFullscreen.set(false);
+  };
+
   // ── Lifecycle ─────────────────────────────────────────────────────────────
   ngOnInit() {
     this.refreshStatus();
     this.loadSources();
     this.alertService.loadFaceDisplayMode();
     this.alertService.connectSSE();
+    document.addEventListener('fullscreenchange', this._onFullscreenChange);
   }
 
   ngOnDestroy(): void {
+    document.removeEventListener('fullscreenchange', this._onFullscreenChange);
     this.addMap?.remove();
     this.largeMap?.remove();
     this.addMap = undefined;
@@ -249,7 +260,33 @@ export class StreamComponent implements OnInit, OnDestroy {
   // ── Pipeline methods ──────────────────────────────────────────────────────
   refreshStatus() {
     this.streamService.getStatus().subscribe({
-      next: (s) => this.status.set(s),
+      next: (s) => {
+        this.status.set(s);
+
+        // Auto-reconnect: if the pipeline is already running with MJPEG,
+        // show the stream immediately (e.g. after a page reload).
+        if (
+          s.status === 'running' &&
+          s.output_mode === 'mjpeg' &&
+          !this.showStream()
+        ) {
+          const count = s.sources_count ?? 0;
+          this.streamSourcesCount.set(count);
+          this.streamRevision.update((v) => v + 1);
+
+          // Auto-paginate when many cameras
+          const totalPages = Math.max(1, Math.ceil(count / this.mosaicPerPage));
+          this.mosaicTotalPages.set(totalPages);
+          if (count > this.mosaicPerPage) {
+            this.mosaicPage.set(1);
+            this.viewMode.set('paged');
+          }
+
+          // Small delay so the pipeline's pull-loop has a frame cached
+          // before the <img> element fires its first HTTP request.
+          setTimeout(() => this.showStream.set(true), 500);
+        }
+      },
       error: () => this.status.set(null),
     });
   }
@@ -332,6 +369,21 @@ export class StreamComponent implements OnInit, OnDestroy {
 
   setFaceDisplayMode(mode: FaceDisplayMode): void {
     this.alertService.setFaceDisplayMode(mode);
+  }
+
+  toggleSidebar(): void {
+    this.sidebarCollapsed.update(v => !v);
+  }
+
+  toggleVideoFullscreen(): void {
+    const el = this.videoContainer?.nativeElement;
+    if (!el) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+      this.videoFullscreen.set(false);
+    } else {
+      el.requestFullscreen().then(() => this.videoFullscreen.set(true));
+    }
   }
 
   goMosaic() {
@@ -462,7 +514,7 @@ export class StreamComponent implements OnInit, OnDestroy {
       if (this.showStream()) {
         this.streamRevision.update((v) => v + 1);
       }
-    }, 1500);
+    }, 4000);
   }
 
   // ── RTSP Source management ────────────────────────────────────────────────

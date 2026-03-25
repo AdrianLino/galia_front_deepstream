@@ -1,25 +1,25 @@
-<div class="p-6 max-w-7xl mx-auto">
+<div class="h-[calc(100vh-3rem)] overflow-y-auto p-3">
 
   <!-- ═══ Header ═══ -->
-  <div class="flex items-center justify-between mb-6">
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center shadow-lg">
-        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <div class="flex items-center justify-between mb-3">
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center shadow-lg">
+        <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
       </div>
       <div>
-        <h1 class="text-2xl font-bold text-white">Notificaciones</h1>
-        <p class="text-sm text-gray-400">Historial de alertas y gestión de personas de interés</p>
+        <h1 class="text-lg font-bold text-white">Notificaciones</h1>
+        <p class="text-xs text-gray-400">Alertas y personas de interés</p>
       </div>
     </div>
   </div>
 
   <!-- ═══ Tabs ═══ -->
-  <div class="flex items-center gap-1 p-1 bg-gray-800/50 rounded-xl border border-gray-700/30 w-fit mb-6">
+  <div class="flex items-center gap-1 p-0.5 bg-gray-800/50 rounded-xl border border-gray-700/30 w-fit mb-3">
     <button (click)="switchTab('history')"
-            class="px-5 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2"
+            class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5"
             [class]="activeTab() === 'history' ? 'bg-red-600 text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-gray-700/50'">
       <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -30,7 +30,7 @@
       }
     </button>
     <button (click)="switchTab('watchlist')"
-            class="px-5 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2"
+            class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5"
             [class]="activeTab() === 'watchlist' ? 'bg-yellow-600 text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-gray-700/50'">
       <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -46,7 +46,7 @@
   @if (activeTab() === 'history') {
 
     <!-- Filters bar -->
-    <div class="flex items-center gap-4 mb-4 flex-wrap">
+    <div class="flex items-center gap-3 mb-3 flex-wrap">
       <!-- Level filter -->
       <div class="flex items-center gap-2">
         <span class="text-xs text-gray-500 uppercase tracking-wide font-semibold">Nivel:</span>
@@ -115,17 +115,17 @@
 
     <!-- Loading state -->
     @if (loading()) {
-      <div class="flex items-center justify-center py-16">
-        <div class="w-8 h-8 border-2 border-gray-700 border-t-red-500 rounded-full animate-spin"></div>
+      <div class="flex items-center justify-center py-10">
+        <div class="w-6 h-6 border-2 border-gray-700 border-t-red-500 rounded-full animate-spin"></div>
       </div>
     } @else if (alerts().length === 0) {
-      <div class="text-center py-16">
-        <svg class="w-16 h-16 mx-auto text-gray-700 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div class="text-center py-10">
+        <svg class="w-10 h-10 mx-auto text-gray-700 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                 d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
-        <p class="text-lg text-gray-500 font-semibold">Sin alertas registradas</p>
-        <p class="text-sm text-gray-600 mt-1">Las alertas aparecerán aquí cuando se detecten personas de interés</p>
+        <p class="text-sm text-gray-500 font-semibold">Sin alertas registradas</p>
+        <p class="text-xs text-gray-600 mt-1">Las alertas aparecerán cuando se detecten personas de interés</p>
       </div>
     } @else {
 
@@ -142,15 +142,15 @@
             <div class="h-1 w-full"
                  [class]="alert.alert_level === 'critical' ? 'bg-red-500' : 'bg-yellow-500'"></div>
 
-            <div class="p-4">
-              <div class="flex items-start gap-4">
+            <div class="p-3">
+              <div class="flex items-start gap-3">
 
                 <!-- ═══ DUAL PHOTOS ═══ -->
-                <div class="flex items-center gap-2 shrink-0">
+                <div class="flex items-center gap-1.5 shrink-0">
 
                   <!-- Foto registrada (del sistema) -->
                   <div class="relative group">
-                    <div class="w-16 h-16 rounded-xl overflow-hidden border-2 border-blue-500/40 bg-gray-900 shadow-lg">
+                    <div class="w-12 h-12 rounded-lg overflow-hidden border-2 border-blue-500/40 bg-gray-900 shadow-lg">
                       @if (alert.person_id) {
                         <img [src]="photoUrl(alert.person_id)"
                              [alt]="alert.person_name"
@@ -158,27 +158,27 @@
                              (error)="$event.target['style'].display='none'" />
                       }
                       <div class="w-full h-full flex items-center justify-center bg-gray-800">
-                        <svg class="w-7 h-7 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                         </svg>
                       </div>
                     </div>
-                    <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[8px] font-bold bg-blue-600 text-white px-1.5 py-0.5 rounded-full whitespace-nowrap shadow">
+                    <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[7px] font-bold bg-blue-600 text-white px-1 py-0.5 rounded-full whitespace-nowrap shadow">
                       REGISTRO
                     </span>
                   </div>
 
                   <!-- Flecha VS -->
                   <div class="flex flex-col items-center gap-0.5">
-                    <span class="text-[9px] font-black text-gray-500 tracking-wider">VS</span>
-                    <svg class="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <span class="text-[8px] font-black text-gray-500 tracking-wider">VS</span>
+                    <svg class="w-3 h-3 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                     </svg>
                   </div>
 
                   <!-- Foto de detección (capturada) -->
                   <div class="relative group">
-                    <div class="w-16 h-16 rounded-xl overflow-hidden border-2 bg-gray-900 shadow-lg"
+                    <div class="w-12 h-12 rounded-lg overflow-hidden border-2 bg-gray-900 shadow-lg"
                          [class]="alert.alert_level === 'critical' ? 'border-red-500/50' : 'border-yellow-500/40'">
                       @if (alert.thumbnail_path) {
                         <img [src]="thumbnailUrl(alert.id)"
@@ -187,14 +187,14 @@
                              (error)="$event.target['style'].display='none'" />
                       }
                       <div class="w-full h-full flex items-center justify-center bg-gray-800">
-                        <svg class="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                 d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                       </div>
                     </div>
-                    <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[8px] font-bold text-white px-1.5 py-0.5 rounded-full whitespace-nowrap shadow"
+                    <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[7px] font-bold text-white px-1 py-0.5 rounded-full whitespace-nowrap shadow"
                           [class]="alert.alert_level === 'critical' ? 'bg-red-600' : 'bg-yellow-600'">
                       CAPTADO
                     </span>
@@ -299,22 +299,22 @@
   @if (activeTab() === 'watchlist') {
 
     @if (watchlistLoading()) {
-      <div class="flex items-center justify-center py-16">
-        <div class="w-8 h-8 border-2 border-gray-700 border-t-yellow-500 rounded-full animate-spin"></div>
+      <div class="flex items-center justify-center py-10">
+        <div class="w-6 h-6 border-2 border-gray-700 border-t-yellow-500 rounded-full animate-spin"></div>
       </div>
     } @else if (watchlist().length === 0) {
-      <div class="text-center py-16">
-        <svg class="w-16 h-16 mx-auto text-gray-700 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div class="text-center py-10">
+        <svg class="w-10 h-10 mx-auto text-gray-700 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                 d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                 d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
         </svg>
-        <p class="text-lg text-gray-500 font-semibold">Lista de vigilancia vacía</p>
-        <p class="text-sm text-gray-600 mt-1">Agrega personas de interés desde la sección de Faces</p>
+        <p class="text-sm text-gray-500 font-semibold">Lista de vigilancia vacía</p>
+        <p class="text-xs text-gray-600 mt-1">Agrega personas de interés desde la sección de Faces</p>
       </div>
     } @else {
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
         @for (person of watchlist(); track person.id) {
           <div class="bg-gray-800/60 rounded-xl border overflow-hidden transition-all hover:bg-gray-800/80"
                [class]="person.alert_level === 'critical'
@@ -324,8 +324,8 @@
             <div class="h-1 w-full"
                  [class]="person.alert_level === 'critical' ? 'bg-red-500' : 'bg-yellow-500'"></div>
 
-            <div class="p-4 flex items-center gap-4">
-              <div class="w-14 h-14 rounded-xl overflow-hidden border-2 shrink-0"
+            <div class="p-3 flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg overflow-hidden border-2 shrink-0"
                    [class]="person.alert_level === 'critical' ? 'border-red-500/50' : 'border-yellow-500/40'">
                 @if (person.id) {
                   <img [src]="photoUrl(person.id)"
@@ -383,16 +383,16 @@
   @if (selectedAlert(); as alert) {
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
          (click)="closeDetail()">
-      <div class="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden"
+      <div class="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden"
            (click)="$event.stopPropagation()">
 
         <!-- Modal color bar -->
-        <div class="h-1.5 w-full"
+        <div class="h-1 w-full"
              [class]="alert.alert_level === 'critical' ? 'bg-red-500' : 'bg-yellow-500'"></div>
 
-        <div class="p-6">
+        <div class="p-4">
           <!-- Header -->
-          <div class="flex items-center justify-between mb-5">
+          <div class="flex items-center justify-between mb-3">
             <div class="flex items-center gap-2">
               <span class="text-[10px] font-black uppercase tracking-widest"
                     [class]="alert.alert_level === 'critical' ? 'text-red-400' : 'text-yellow-400'">
@@ -409,35 +409,35 @@
           </div>
 
           <!-- Dual photos large -->
-          <div class="flex items-center justify-center gap-4 mb-5">
+          <div class="flex items-center justify-center gap-3 mb-4">
             <!-- Registered -->
             <div class="text-center">
-              <div class="w-28 h-28 rounded-2xl overflow-hidden border-3 border-blue-500/50 bg-gray-800 shadow-xl mx-auto mb-2">
+              <div class="w-20 h-20 rounded-xl overflow-hidden border-3 border-blue-500/50 bg-gray-800 shadow-xl mx-auto mb-1.5">
                 @if (alert.person_id) {
                   <img [src]="photoUrl(alert.person_id)"
                        class="w-full h-full object-cover"
                        (error)="$event.target['style'].display='none'" />
                 }
                 <div class="w-full h-full flex items-center justify-center">
-                  <svg class="w-10 h-10 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-8 h-8 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                   </svg>
                 </div>
               </div>
-              <span class="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Foto de registro</span>
+              <span class="text-[9px] font-bold text-blue-400 uppercase tracking-wider">Registro</span>
             </div>
 
             <!-- VS arrow -->
-            <div class="flex flex-col items-center py-4">
-              <span class="text-xs font-black text-gray-500 mb-1">VS</span>
-              <svg class="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div class="flex flex-col items-center py-2">
+              <span class="text-[10px] font-black text-gray-500 mb-0.5">VS</span>
+              <svg class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
             </div>
 
             <!-- Detection -->
             <div class="text-center">
-              <div class="w-28 h-28 rounded-2xl overflow-hidden border-3 bg-gray-800 shadow-xl mx-auto mb-2"
+              <div class="w-20 h-20 rounded-xl overflow-hidden border-3 bg-gray-800 shadow-xl mx-auto mb-1.5"
                    [class]="alert.alert_level === 'critical' ? 'border-red-500/50' : 'border-yellow-500/50'">
                 @if (alert.thumbnail_path) {
                   <img [src]="thumbnailUrl(alert.id)"
@@ -452,16 +452,16 @@
                   </svg>
                 </div>
               </div>
-              <span class="text-[10px] font-bold uppercase tracking-wider"
+              <span class="text-[9px] font-bold uppercase tracking-wider"
                     [class]="alert.alert_level === 'critical' ? 'text-red-400' : 'text-yellow-400'">
-                Foto de detección
+                Detección
               </span>
             </div>
           </div>
 
           <!-- Details -->
-          <div class="bg-gray-800/50 rounded-xl p-4 space-y-2 mb-4">
-            <div class="flex justify-between text-sm">
+          <div class="bg-gray-800/50 rounded-lg p-3 space-y-1.5 mb-3">
+            <div class="flex justify-between text-xs">
               <span class="text-gray-400">Persona</span>
               <span class="font-bold text-white">{{ alert.person_name }}</span>
             </div>
@@ -469,15 +469,15 @@
               <span class="text-gray-400">Cámara</span>
               <span class="text-gray-200">{{ alert.camera_name || 'Desconocida' }}</span>
             </div>
-            <div class="flex justify-between text-sm">
+            <div class="flex justify-between text-xs">
               <span class="text-gray-400">Confianza</span>
               <span class="text-gray-200">{{ (alert.confidence * 100).toFixed(1) }}%</span>
             </div>
-            <div class="flex justify-between text-sm">
+            <div class="flex justify-between text-xs">
               <span class="text-gray-400">Fecha</span>
               <span class="text-gray-200">{{ formatDate(alert.created_at) }}</span>
             </div>
-            <div class="flex justify-between text-sm">
+            <div class="flex justify-between text-xs">
               <span class="text-gray-400">Estado</span>
               <span [class]="alert.acknowledged ? 'text-green-400' : 'text-yellow-400'">
                 {{ alert.acknowledged ? 'Leída' : 'Pendiente' }}
@@ -487,10 +487,10 @@
 
           <!-- Clip in modal -->
           @if (alert.clip_path) {
-            <div class="rounded-xl overflow-hidden border border-gray-700 bg-black mb-4">
+            <div class="rounded-lg overflow-hidden border border-gray-700 bg-black mb-3">
               <video [src]="clipUrl(alert.id)"
                      controls
-                     class="w-full max-h-56 rounded-xl">
+                     class="w-full max-h-48 rounded-lg">
               </video>
               <div class="px-3 py-1.5 bg-gray-800/80 text-[10px] text-gray-400">
                 Clip de 10 segundos capturado al momento de la detección
@@ -502,12 +502,12 @@
           <div class="flex items-center gap-2 justify-end">
             @if (!alert.acknowledged) {
               <button (click)="acknowledgeOne(alert.id); closeDetail()"
-                      class="px-4 py-2 text-sm font-semibold text-green-400 bg-green-500/10 rounded-lg hover:bg-green-500/20 transition-colors border border-green-500/20">
+                      class="px-3 py-1.5 text-xs font-semibold text-green-400 bg-green-500/10 rounded-lg hover:bg-green-500/20 transition-colors border border-green-500/20">
                 ✓ Marcar como leída
               </button>
             }
             <button (click)="closeDetail()"
-                    class="px-4 py-2 text-sm font-semibold text-gray-400 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors">
+                    class="px-3 py-1.5 text-xs font-semibold text-gray-400 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors">
               Cerrar
             </button>
           </div>

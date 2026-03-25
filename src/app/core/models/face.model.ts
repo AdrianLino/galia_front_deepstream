@@ -33,6 +33,14 @@ export interface RegisterResponse {
   detection_score: number;
   embedding_dim: number;
   message: string;
+  // Duplicate face warning fields
+  duplicate_warning?: boolean;
+  existing_name?: string;
+  existing_id?: string;
+  similarity?: number;
+  existing_alert_level?: string;
+  existing_registered_at?: string;
+  new_photo_date?: string;
 }
 
 export interface RenameResponse {

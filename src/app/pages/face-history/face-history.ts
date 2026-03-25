@@ -12,19 +12,19 @@ import {
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="p-6 max-w-7xl mx-auto space-y-6">
+    <div class="h-[calc(100vh-3rem)] overflow-y-auto p-3 space-y-3">
 
       <!-- Header -->
       <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg">
-            <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg">
+            <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
           </div>
           <div>
-            <h1 class="text-xl font-black text-white tracking-tight">Historial de Rostros</h1>
+            <h1 class="text-base font-black text-white tracking-tight">Historial de Rostros</h1>
             <p class="text-xs text-gray-400">{{ total() }} registros totales</p>
           </div>
         </div>
@@ -40,14 +40,14 @@ import {
       </div>
 
       <!-- Filters -->
-      <div class="flex flex-wrap items-end gap-4 bg-gray-800/50 rounded-xl border border-gray-700/40 p-4">
+      <div class="flex flex-wrap items-end gap-3 bg-gray-800/50 rounded-lg border border-gray-700/40 p-3">
 
         <!-- Person dropdown -->
-        <div class="flex flex-col gap-1">
+        <div class="flex flex-col gap-0.5">
           <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Persona</label>
           <select [(ngModel)]="filterPerson"
                   (ngModelChange)="applyFilters()"
-                  class="bg-gray-900 border border-gray-700 rounded-lg text-sm text-white px-3 py-1.5 min-w-[180px] focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                  class="bg-gray-900 border border-gray-700 rounded-lg text-xs text-white px-2 py-1 min-w-[160px] focus:outline-none focus:ring-1 focus:ring-indigo-500">
             <option value="">Todas</option>
             @for (p of persons(); track p.person_name) {
               <option [value]="p.person_name">{{ p.person_name }} ({{ p.count }})</option>
@@ -56,17 +56,17 @@ import {
         </div>
 
         <!-- Date from -->
-        <div class="flex flex-col gap-1">
+        <div class="flex flex-col gap-0.5">
           <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Desde</label>
           <input type="datetime-local" [(ngModel)]="filterFrom" (change)="applyFilters()"
-                 class="bg-gray-900 border border-gray-700 rounded-lg text-sm text-white px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"/>
+                 class="bg-gray-900 border border-gray-700 rounded-lg text-xs text-white px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"/>
         </div>
 
         <!-- Date to -->
-        <div class="flex flex-col gap-1">
+        <div class="flex flex-col gap-0.5">
           <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Hasta</label>
           <input type="datetime-local" [(ngModel)]="filterTo" (change)="applyFilters()"
-                 class="bg-gray-900 border border-gray-700 rounded-lg text-sm text-white px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"/>
+                 class="bg-gray-900 border border-gray-700 rounded-lg text-xs text-white px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"/>
         </div>
 
         <!-- Clear -->
@@ -79,59 +79,59 @@ import {
       </div>
 
       <!-- Table -->
-      <div class="bg-gray-800/40 rounded-xl border border-gray-700/40 overflow-hidden">
+      <div class="bg-gray-800/40 rounded-lg border border-gray-700/40 overflow-hidden">
         @if (loading()) {
-          <div class="py-16 text-center">
-            <div class="inline-block w-8 h-8 border-2 border-gray-600 border-t-indigo-400 rounded-full animate-spin"></div>
-            <p class="text-sm text-gray-500 mt-3">Cargando historial…</p>
+          <div class="py-10 text-center">
+            <div class="inline-block w-6 h-6 border-2 border-gray-600 border-t-indigo-400 rounded-full animate-spin"></div>
+            <p class="text-xs text-gray-500 mt-2">Cargando historial…</p>
           </div>
         } @else if (items().length === 0) {
-          <div class="py-16 text-center">
-            <svg class="w-12 h-12 mx-auto text-gray-700 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div class="py-10 text-center">
+            <svg class="w-10 h-10 mx-auto text-gray-700 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                     d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
-            <p class="text-sm text-gray-500">Sin registros</p>
+            <p class="text-xs text-gray-500">Sin registros</p>
           </div>
         } @else {
-          <table class="w-full text-sm">
+          <table class="w-full text-xs">
             <thead>
-              <tr class="text-[10px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-700/50">
-                <th class="px-4 py-3 text-left">Rostro</th>
-                <th class="px-4 py-3 text-left">Persona</th>
-                <th class="px-4 py-3 text-center">Confianza</th>
-                <th class="px-4 py-3 text-left">Cámara</th>
-                <th class="px-4 py-3 text-left">Fecha / Hora</th>
+              <tr class="text-[9px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-700/50">
+                <th class="px-3 py-2 text-left">Rostro</th>
+                <th class="px-3 py-2 text-left">Persona</th>
+                <th class="px-3 py-2 text-center">Confianza</th>
+                <th class="px-3 py-2 text-left">Cámara</th>
+                <th class="px-3 py-2 text-left">Fecha / Hora</th>
               </tr>
             </thead>
             <tbody>
               @for (item of items(); track item.id) {
                 <tr class="border-b border-gray-800/40 hover:bg-gray-700/20 transition-colors">
                   <!-- Thumbnail -->
-                  <td class="px-4 py-2">
+                  <td class="px-3 py-1.5">
                     @if (item.thumbnail_path) {
                       <img [src]="svc.thumbnailUrl(item.thumbnail_path)"
-                           class="w-10 h-10 rounded-lg object-cover border border-gray-700 cursor-pointer hover:scale-110 transition-transform"
+                           class="w-8 h-8 rounded-lg object-cover border border-gray-700 cursor-pointer hover:scale-110 transition-transform"
                            (click)="expandedItem.set(item)"
                            (error)="$event.target['style'].display='none'"
                            loading="lazy"/>
                     } @else {
-                      <div class="w-10 h-10 rounded-lg bg-gray-800 border border-gray-700 flex items-center justify-center">
-                        <svg class="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+                      <div class="w-8 h-8 rounded-lg bg-gray-800 border border-gray-700 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                         </svg>
                       </div>
                     }
                   </td>
                   <!-- Name -->
-                  <td class="px-4 py-2">
+                  <td class="px-3 py-1.5">
                     <span class="font-bold"
                           [class]="item.person_name === 'Desconocido' ? 'text-red-400' : item.person_name.startsWith('~') ? 'text-yellow-400' : 'text-white'">
                       {{ item.person_name.startsWith('~') ? item.person_name.substring(1) + ' ?' : item.person_name }}
                     </span>
                   </td>
                   <!-- Confidence -->
-                  <td class="px-4 py-2 text-center">
+                  <td class="px-3 py-1.5 text-center">
                     <span class="inline-flex items-center gap-1">
                       <span class="w-1.5 h-1.5 rounded-full"
                             [class]="item.confidence >= 0.6 ? 'bg-green-400' : item.confidence >= 0.4 ? 'bg-yellow-400' : 'bg-red-400'"></span>
@@ -139,9 +139,9 @@ import {
                     </span>
                   </td>
                   <!-- Camera -->
-                  <td class="px-4 py-2 text-gray-400">{{ item.camera_name || 'Cámara ' + item.source_id }}</td>
+                  <td class="px-3 py-1.5 text-gray-400">{{ item.camera_name || 'Cámara ' + item.source_id }}</td>
                   <!-- Date -->
-                  <td class="px-4 py-2 text-gray-400 text-xs">{{ formatDate(item.created_at) }}</td>
+                  <td class="px-3 py-1.5 text-gray-400 text-[10px]">{{ formatDate(item.created_at) }}</td>
                 </tr>
               }
             </tbody>

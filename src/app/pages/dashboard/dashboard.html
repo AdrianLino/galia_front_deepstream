@@ -1,45 +1,45 @@
-<div class="p-6">
-  <div class="flex items-center justify-between mb-6">
-    <h1 class="text-2xl font-bold">Dashboard</h1>
-    <div class="flex gap-3">
+<div class="h-[calc(100vh-3rem)] overflow-y-auto p-3">
+  <div class="flex items-center justify-between mb-3">
+    <h1 class="text-lg font-bold">Dashboard</h1>
+    <div class="flex gap-2">
       <button (click)="refresh()"
-              class="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 text-sm">
+              class="px-3 py-1.5 bg-gray-700 text-white rounded hover:bg-gray-600 text-xs">
         Actualizar
       </button>
       <button (click)="syncMilvus()"
-              class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500 text-sm">
+              class="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-500 text-xs">
         Sync Milvus
       </button>
     </div>
   </div>
 
   @if (syncMsg()) {
-    <p class="mb-4 text-sm text-blue-400">{{ syncMsg() }}</p>
+    <p class="mb-2 text-xs text-blue-400">{{ syncMsg() }}</p>
   }
 
   @if (loading()) {
-    <p class="text-gray-400">Cargando...</p>
+    <p class="text-gray-400 text-sm">Cargando...</p>
   }
 
   @if (error()) {
-    <p class="text-red-400">{{ error() }}</p>
+    <p class="text-red-400 text-sm">{{ error() }}</p>
   }
 
   @if (health(); as h) {
     <!-- Overall status badge -->
-    <div class="mb-4">
-      <span class="text-sm px-3 py-1 rounded-full font-semibold"
+    <div class="mb-3">
+      <span class="text-xs px-2.5 py-0.5 rounded-full font-semibold"
             [class]="h.status === 'ok' ? 'bg-green-900 text-green-300' : 'bg-yellow-900 text-yellow-300'">
         Sistema: {{ h.status }}
       </span>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
 
       <!-- Pipeline -->
-      <div class="bg-gray-800 rounded-lg p-5">
-        <h2 class="text-lg font-semibold mb-3">Pipeline</h2>
-        <div class="space-y-2 text-sm">
+      <div class="bg-gray-800 rounded-lg p-3">
+        <h2 class="text-sm font-semibold mb-2">Pipeline</h2>
+        <div class="space-y-1.5 text-xs">
           <div class="flex justify-between">
             <span class="text-gray-400">Estado</span>
             <span [class]="h.components.pipeline.status === 'running' ? 'text-green-400' : 'text-yellow-400'">
@@ -65,9 +65,9 @@
       </div>
 
       <!-- Milvus -->
-      <div class="bg-gray-800 rounded-lg p-5">
-        <h2 class="text-lg font-semibold mb-3">Milvus</h2>
-        <div class="space-y-2 text-sm">
+      <div class="bg-gray-800 rounded-lg p-3">
+        <h2 class="text-sm font-semibold mb-2">Milvus</h2>
+        <div class="space-y-1.5 text-xs">
           <div class="flex justify-between">
             <span class="text-gray-400">Estado</span>
             <span [class]="h.components.milvus.status === 'connected' ? 'text-green-400' : 'text-red-400'">
@@ -93,9 +93,9 @@
       </div>
 
       <!-- Face DB -->
-      <div class="bg-gray-800 rounded-lg p-5">
-        <h2 class="text-lg font-semibold mb-3">Face Database</h2>
-        <div class="space-y-2 text-sm">
+      <div class="bg-gray-800 rounded-lg p-3">
+        <h2 class="text-sm font-semibold mb-2">Face Database</h2>
+        <div class="space-y-1.5 text-xs">
           <div class="flex justify-between">
             <span class="text-gray-400">Estado</span>
             <span [class]="h.components.face_db.status === 'ok' ? 'text-green-400' : 'text-red-400'">

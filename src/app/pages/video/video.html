@@ -1,31 +1,31 @@
-<div class="h-[calc(100vh-64px)] overflow-hidden flex flex-col lg:flex-row bg-gray-950 text-white">
+<div class="h-[calc(100vh-48px)] overflow-hidden flex flex-col lg:flex-row bg-gray-950 text-white">
 
   <!-- ========================================== -->
   <!-- LEFT SIDEBAR: Upload & List -->
   <!-- ========================================== -->
-  <div class="w-full lg:w-[420px] flex-shrink-0 flex flex-col border-r border-gray-800 bg-gray-900/50 backdrop-blur-xl z-10 h-1/3 lg:h-full relative shadow-[4px_0_24px_rgba(0,0,0,0.5)]">
+  <div class="w-full lg:w-[360px] flex-shrink-0 flex flex-col border-r border-gray-800 bg-gray-900/50 backdrop-blur-xl z-10 h-1/3 lg:h-full relative shadow-[4px_0_24px_rgba(0,0,0,0.5)]">
     
     <!-- Upload Section Header -->
-    <div class="p-5 border-b border-gray-800/80 bg-gray-900/80 sticky top-0 z-20">
-      <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400 mb-1 flex items-center justify-between">
+    <div class="p-3 border-b border-gray-800/80 bg-gray-900/80 sticky top-0 z-20">
+      <h1 class="text-base font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400 mb-0.5 flex items-center justify-between">
         Video Forense
-        <span class="text-[10px] uppercase tracking-wider text-gray-500 font-bold bg-gray-800 px-2 py-0.5 rounded-full border border-gray-700">Puerto 8001</span>
+        <span class="text-[9px] uppercase tracking-wider text-gray-500 font-bold bg-gray-800 px-1.5 py-0.5 rounded-full border border-gray-700">Puerto 8001</span>
       </h1>
-      <p class="text-xs text-gray-400">Procesamiento y análisis inteligente offline.</p>
+      <p class="text-[10px] text-gray-400">Procesamiento y análisis inteligente offline.</p>
     </div>
 
-    <div class="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-6">
+    <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-4">
       <!-- Upload Card -->
-      <div class="bg-gray-800/40 border border-gray-700/50 border-dashed rounded-xl p-5 hover:bg-gray-800/60 transition-colors group">
-        <h2 class="font-semibold text-sm text-gray-300 mb-3 flex items-center gap-2">
+      <div class="bg-gray-800/40 border border-gray-700/50 border-dashed rounded-lg p-3 hover:bg-gray-800/60 transition-colors group">
+        <h2 class="font-semibold text-xs text-gray-300 mb-2 flex items-center gap-1.5">
           <svg class="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
           Subir nuevo video
         </h2>
-        <div class="space-y-4">
+        <div class="space-y-3">
           <input type="file" accept=".mp4,.mov" (change)="onFileChange($event)"
-                  class="w-full text-xs text-gray-300 file:mr-3 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:bg-gray-700 file:text-white file:font-medium hover:file:bg-gray-600 file:cursor-pointer file:transition-colors focus:outline-none" />
+                  class="w-full text-xs text-gray-300 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-gray-700 file:text-white file:font-medium hover:file:bg-gray-600 file:cursor-pointer file:transition-colors focus:outline-none" />
           <button (click)="upload()" [disabled]="!uploadFile || uploading()"
-                  class="w-full py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-medium rounded-lg hover:from-blue-500 hover:to-blue-400 disabled:opacity-50 disabled:from-gray-700 disabled:to-gray-700 transition-all text-sm shadow-lg shadow-blue-900/20 active:scale-[0.98]">
+                  class="w-full py-2 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-medium rounded-lg hover:from-blue-500 hover:to-blue-400 disabled:opacity-50 disabled:from-gray-700 disabled:to-gray-700 transition-all text-xs shadow-lg shadow-blue-900/20 active:scale-[0.98]">
             @if (uploading()) {
               <span class="flex items-center justify-center gap-2">
                 <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">

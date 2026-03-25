@@ -1,26 +1,26 @@
-<div class="flex flex-col h-[calc(100vh-6rem)] min-h-[800px] p-4 lg:p-6 bg-gray-900 text-gray-200">
+<div class="flex flex-col h-[calc(100vh-3.5rem)] p-2 lg:p-3 bg-gray-900 text-gray-200">
   
-  <div class="flex items-center justify-between mb-6">
-    <h1 class="text-2xl font-black text-white tracking-tight flex items-center gap-3">
+  <div class="flex items-center justify-between mb-2">
+    <h1 class="text-lg font-black text-white tracking-tight flex items-center gap-2">
       Reconocimiento Facial
     </h1>
     
-    <!-- Stylish Tabs / Pills -->
-    <div class="flex p-1 bg-gray-800/80 rounded-xl border border-gray-700/50 shadow-lg backdrop-blur">
+    <!-- Tabs -->
+    <div class="flex p-0.5 bg-gray-800/80 rounded-xl border border-gray-700/50 shadow-lg backdrop-blur">
       <button (click)="setTab('persons')" 
-        class="px-5 py-2 text-sm font-bold rounded-lg transition-all"
+        class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all"
         [class]="activeTab() === 'persons' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-gray-700/50'">
         Directorio
       </button>
       <button (click)="setTab('register')" 
-        class="px-5 py-2 text-sm font-bold rounded-lg transition-all"
+        class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all"
         [class]="activeTab() === 'register' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-gray-700/50'">
-        Registrar Nuevo
+        Registrar
       </button>
       <button (click)="setTab('identify')" 
-        class="px-5 py-2 text-sm font-bold rounded-lg transition-all"
+        class="px-4 py-1.5 text-xs font-bold rounded-lg transition-all"
         [class]="activeTab() === 'identify' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-gray-700/50'">
-        Identificar en Foto
+        Identificar
       </button>
     </div>
   </div>
@@ -29,39 +29,38 @@
 
     <!-- ═══════════ TAB: PERSONS (DIRECTORY) ═══════════ -->
     @if (activeTab() === 'persons') {
-    <div class="flex flex-col h-full space-y-4">
+    <div class="flex flex-col h-full space-y-2">
       
       <!-- Top Bar Directory -->
-      <div class="flex flex-col md:flex-row items-center justify-between bg-gray-800/50 px-5 py-3 rounded-xl border border-gray-700/50 gap-4">
-        <div class="flex items-center gap-3 w-full md:w-auto">
-          <div class="p-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
-            <svg class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+      <div class="flex flex-col md:flex-row items-center justify-between bg-gray-800/50 px-4 py-2 rounded-xl border border-gray-700/50 gap-3">
+        <div class="flex items-center gap-2 w-full md:w-auto">
+          <div class="p-1.5 bg-blue-500/10 rounded-lg border border-blue-500/20">
+            <svg class="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
           </div>
           <div>
-            <h2 class="text-white font-bold text-sm">Base de Datos de Rostros</h2>
             <p class="text-xs text-gray-400">{{ filteredPersons().length }} persona(s) @if (searchQuery()) { encontrada(s) } @else { registrada(s) }</p>
           </div>
         </div>
 
-        <div class="flex items-center gap-3 w-full md:w-auto">
-          <div class="relative flex-1 md:w-64">
+        <div class="flex items-center gap-2 w-full md:w-auto">
+          <div class="relative flex-1 md:w-56">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg class="h-4 w-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
+              <svg class="h-3.5 w-3.5 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
             </div>
             <input type="text" [ngModel]="searchQuery()" (ngModelChange)="onSearchChange($event)"
-                   class="w-full bg-gray-900 border border-gray-600 text-white text-xs rounded-lg pl-9 pr-3 py-2 outline-none focus:border-blue-500 transition-colors"
+                   class="w-full bg-gray-900 border border-gray-600 text-white text-xs rounded-lg pl-8 pr-3 py-1.5 outline-none focus:border-blue-500 transition-colors"
                    placeholder="Buscar rostro...">
           </div>
-          <button (click)="loadPersons(); loadFolders()" class="flex items-center gap-2 px-4 py-2 bg-gray-700/80 hover:bg-gray-600 text-white rounded-lg text-xs font-semibold transition-all border border-gray-600 shadow-sm active:scale-95 shrink-0">
+          <button (click)="loadPersons(); loadFolders()" class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-700/80 hover:bg-gray-600 text-white rounded-lg text-xs font-semibold transition-all border border-gray-600 shadow-sm active:scale-95 shrink-0">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" [class.animate-spin]="listLoading()"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-            Sincronizar
+            Sync
           </button>
         </div>
       </div>
 
       <!-- Folders Bar -->
-      <div class="flex items-center gap-2 flex-wrap bg-gray-800/30 px-4 py-2.5 rounded-xl border border-gray-700/30">
-        <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+      <div class="flex items-center gap-1.5 flex-wrap bg-gray-800/30 px-3 py-1.5 rounded-xl border border-gray-700/30">
+        <svg class="w-3.5 h-3.5 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
         
         <!-- All -->
         <button (click)="selectFolder('all')" 
@@ -165,7 +164,7 @@
       }
 
       @if (!listLoading() && pagedPersons().length > 0) {
-      <div class="grid grid-cols-2 min-[500px]:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4 pb-2">
+      <div class="grid grid-cols-2 min-[500px]:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-9 gap-2 pb-2">
         @for (person of pagedPersons(); track person.id) {
         <div class="bg-gray-800/80 rounded-xl overflow-hidden flex flex-col border border-gray-700/50 shadow-lg group hover:border-blue-500/50 transition-all hover:-translate-y-1 hover:shadow-blue-900/20 relative">
           
@@ -295,188 +294,402 @@
 
     <!-- ═══════════ TAB: REGISTER (NEW FACE) ═══════════ -->
     @if (activeTab() === 'register') {
-    <div class="h-full flex items-center justify-center p-4">
-      <div class="max-w-lg w-full bg-gray-800/80 backdrop-blur rounded-2xl p-8 border border-gray-700/50 shadow-2xl relative overflow-hidden">
+    <div class="h-full flex items-start lg:items-center justify-center p-2 lg:p-4 overflow-y-auto custom-scrollbar">
+      <div class="max-w-6xl w-full bg-gray-800/80 backdrop-blur rounded-3xl p-6 lg:p-8 border border-gray-700/50 shadow-2xl relative overflow-hidden flex flex-col">
         
         <!-- Decorative bg -->
-        <div class="absolute -top-24 -right-24 w-48 h-48 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
-        <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -top-32 -right-32 w-80 h-80 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-32 -left-32 w-80 h-80 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none"></div>
 
-        <div class="relative z-10 space-y-6">
-          <div class="text-center mb-8">
-            <div class="w-16 h-16 bg-blue-900/30 rounded-2xl border border-blue-500/30 flex items-center justify-center mx-auto mb-4 rotate-3 shadow-inner">
-              <svg class="w-8 h-8 text-blue-400 -rotate-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+        <div class="relative z-10 flex flex-col w-full h-full">
+          <!-- Header -->
+          <div class="text-center mb-6 lg:mb-8">
+            <div class="w-14 h-14 bg-blue-900/30 rounded-2xl border border-blue-500/30 flex items-center justify-center mx-auto mb-3 rotate-3 shadow-inner">
+              <svg class="w-7 h-7 text-blue-400 -rotate-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
             </div>
-            <h2 class="text-2xl font-black text-white">Registrar Rostro</h2>
-            <p class="text-sm text-gray-400 mt-2 max-w-[280px] mx-auto leading-relaxed">
-              Sube una foto clara (preferiblemente de cuerpo completo o retrato). El sistema aislará automáticamente el rostro principal y generará los embeddings.
+            <h2 class="text-2xl lg:text-3xl font-black text-white tracking-tight">Registrar Rostro</h2>
+            <p class="text-sm text-gray-400 mt-2 max-w-[400px] mx-auto leading-relaxed">
+              Sube una foto clara del rostro o arrastra un lote de imágenes. El sistema aislará automáticamente el rostro y generará los embeddings.
             </p>
           </div>
 
-          <div class="space-y-5">
-            <div>
-              <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2">Nombre Completo <span class="text-red-400">*</span></label>
-              <div class="relative">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg class="h-5 w-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
-                </div>
-                <input type="text" [(ngModel)]="registerName" placeholder="Ej: Valentina Morales"
-                  class="w-full bg-gray-900/80 text-white rounded-xl pl-10 pr-4 py-3 text-sm font-medium border border-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder-gray-500" />
-              </div>
-            </div>
-
-            <!-- Alert Level + Folder Row -->
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2">Nivel de Riesgo</label>
-                <div class="flex gap-1.5">
-                  <button (click)="registerAlertLevel = 'normal'" 
-                          class="flex-1 py-2 rounded-lg text-xs font-bold border transition-all"
-                          [class]="registerAlertLevel === 'normal' ? 'bg-gray-600 text-white border-gray-500' : 'bg-gray-900/50 text-gray-500 border-gray-700 hover:bg-gray-800 hover:text-gray-300'">
-                    Normal
-                  </button>
-                  <button (click)="registerAlertLevel = 'watch'" 
-                          class="flex-1 py-2 rounded-lg text-xs font-bold border transition-all"
-                          [class]="registerAlertLevel === 'watch' ? 'bg-yellow-600 text-white border-yellow-500' : 'bg-gray-900/50 text-gray-500 border-gray-700 hover:bg-gray-800 hover:text-gray-300'">
-                    Vigilar
-                  </button>
-                  <button (click)="registerAlertLevel = 'critical'" 
-                          class="flex-1 py-2 rounded-lg text-xs font-bold border transition-all"
-                          [class]="registerAlertLevel === 'critical' ? 'bg-red-600 text-white border-red-500' : 'bg-gray-900/50 text-gray-500 border-gray-700 hover:bg-gray-800 hover:text-gray-300'">
-                    Crítico
-                  </button>
-                </div>
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2">Carpeta</label>
-                <div class="relative">
-                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
-                  </div>
-                  <select [(ngModel)]="registerFolderId" 
-                          class="w-full bg-gray-900/80 text-white rounded-xl pl-9 pr-4 py-2.5 text-sm font-medium border border-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all appearance-none cursor-pointer">
-                    <option [ngValue]="null">Sin carpeta</option>
-                    @for (folder of folders(); track folder.id) {
-                      <option [ngValue]="folder.id">{{ folder.name }}</option>
-                    }
-                  </select>
-                  <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <svg class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2">Imagen Origen (JPEG/PNG) <span class="text-red-400">*</span></label>
-              
-              <!-- Styled File Input Area -->
-              <div class="relative group mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-xl transition-colors"
-                   [class]="isDragging() ? 'border-blue-400 bg-blue-900/20' : 'border-gray-600 hover:border-blue-500 hover:bg-blue-900/10'"
-                   (dragover)="onDragOver($event)" 
-                   (dragleave)="onDragLeave($event)" 
-                   (drop)="onDrop($event)">
-                <div class="space-y-2 text-center">
-                  <svg class="mx-auto h-10 w-10 text-gray-500 group-hover:text-blue-400 transition-colors" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                  <div class="flex text-sm text-gray-400 justify-center">
-                    <label class="relative cursor-pointer rounded-md font-bold text-blue-500 hover:text-blue-400 focus-within:outline-none">
-                      <span>Explorar archivos</span>
-                      <input type="file" multiple accept="image/jpeg,image/png" (change)="onRegisterFile($event)" class="sr-only">
-                    </label>
-                    <p class="pl-1">o arrastrar aquí</p>
-                  </div>
-                  @if (registerFiles.length === 1) {
-                    <p class="text-xs text-blue-300 font-medium bg-blue-900/30 inline-block px-3 py-1 rounded-full border border-blue-500/30">
-                      Archivo seleccionado: {{ registerFiles[0].name }}
-                    </p>
-                  } @else if (registerFiles.length > 1) {
-                    <p class="text-xs text-blue-300 font-medium bg-blue-900/30 inline-block px-3 py-1 rounded-full border border-blue-500/30">
-                      {{ registerFiles.length }} archivos seleccionados
-                    </p>
-                  } @else {
-                    <p class="text-[11px] text-gray-500">Solo imágenes. Un rostro por foto.</p>
-                  }
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="pt-4 space-y-3">
-            <!-- Progress bar for batch uploads -->
-            @if (batchTotal() > 0 && registerLoading()) {
-            <div class="space-y-2">
-              <div class="flex justify-between items-center text-xs">
-                <span class="text-gray-300 font-medium">
-                  Procesando: <span class="text-blue-400">{{ batchCurrentFile() }}</span>
-                </span>
-                <span class="text-gray-400 font-bold">{{ batchProgress() }} / {{ batchTotal() }}</span>
-              </div>
-              <!-- Progress bar -->
-              <div class="w-full bg-gray-700 rounded-full h-3 overflow-hidden">
-                <div class="h-full rounded-full transition-all duration-300 ease-out"
-                     [style.width.%]="(batchProgress() / batchTotal()) * 100"
-                     [class]="batchResults().length > 0 && batchResults()[batchResults().length - 1]?.ok === false ? 'bg-gradient-to-r from-blue-600 to-yellow-500' : 'bg-gradient-to-r from-blue-600 to-blue-400'">
-                </div>
-              </div>
-              <div class="flex gap-3 text-[11px]">
-                <span class="text-emerald-400">{{ batchResults().filter(r => r.ok).length }} exitosos</span>
-                @if (batchResults().filter(r => !r.ok).length > 0) {
-                  <span class="text-red-400">{{ batchResults().filter(r => !r.ok).length }} rechazados</span>
-                }
-              </div>
-            </div>
-            }
-
-            <button (click)="register()" [disabled]="registerLoading() || (registerFiles.length === 1 && !registerName.trim()) || registerFiles.length === 0"
-              class="w-full py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 disabled:from-gray-700 disabled:to-gray-700 disabled:text-gray-500 text-white rounded-xl font-bold shadow-lg shadow-blue-900/30 active:scale-[0.98] transition-all flex justify-center items-center gap-2">
-              @if (registerLoading()) {
-                <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
-                @if (batchTotal() > 0) {
-                  Subiendo {{ batchProgress() }}/{{ batchTotal() }}...
-                } @else {
-                  Procesando Imagen...
-                }
-              } @else {
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                Completar Registro
-              }
-            </button>
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
             
-            @if (registerMsg()) { 
-            <div class="bg-emerald-900/30 border border-emerald-500/40 text-emerald-300 px-4 py-3 rounded-xl text-sm flex items-start gap-3">
-              <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-              {{ registerMsg() }}
-            </div>
-            }
-            @if (registerError()) { 
-            <div class="bg-red-900/30 border border-red-500/40 text-red-300 px-4 py-3 rounded-xl text-sm flex items-start gap-3">
-              <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-              {{ registerError() }}
-            </div>
-            }
+            <!-- Left Column: Form -->
+            <div class="lg:col-span-5 flex flex-col space-y-5 bg-gray-900/40 p-5 lg:p-6 rounded-2xl border border-gray-700/50 shadow-inner">
+              <div>
+                <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">Nombre Completo <span class="text-red-400">*</span></label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <svg class="h-4 w-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+                  </div>
+                  <input type="text" [(ngModel)]="registerName" placeholder="Ej: Valentina Morales"
+                    class="w-full bg-gray-900/80 text-white rounded-xl pl-10 pr-4 py-3 text-sm font-medium border border-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder-gray-500" />
+                </div>
+              </div>
 
-            <!-- Batch results detail (shows rejected files) -->
-            @if (batchResults().length > 0 && !registerLoading()) {
-            <div class="bg-gray-900/60 border border-gray-600/50 rounded-xl p-3 max-h-48 overflow-y-auto custom-scrollbar space-y-1.5">
-              <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Detalle de carga</p>
-              @for (r of batchResults(); track r.name) {
-                <div class="flex items-center gap-2 text-xs py-1 border-b border-gray-800/50 last:border-0">
-                  @if (r.ok) {
-                    <svg class="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                    <span class="text-gray-300 truncate">{{ r.name }}</span>
+              <!-- Alert Level + Folder Row -->
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-[11px] font-bold text-gray-300 uppercase tracking-wider mb-1.5">Nivel de Riesgo</label>
+                  <div class="flex gap-1.5">
+                    <button (click)="registerAlertLevel = 'normal'" 
+                            class="flex-1 py-2 rounded-lg text-xs font-bold border transition-all"
+                            [class]="registerAlertLevel === 'normal' ? 'bg-gray-600 text-white border-gray-500 shadow-md' : 'bg-gray-900/50 text-gray-500 border-gray-700 hover:bg-gray-800 hover:text-gray-300'">
+                      Normal
+                    </button>
+                    <button (click)="registerAlertLevel = 'watch'" 
+                            class="flex-1 py-2 rounded-lg text-xs font-bold border transition-all"
+                            [class]="registerAlertLevel === 'watch' ? 'bg-yellow-600 text-white border-yellow-500 shadow-md' : 'bg-gray-900/50 text-gray-500 border-gray-700 hover:bg-gray-800 hover:text-gray-300'">
+                      Vigilar
+                    </button>
+                    <button (click)="registerAlertLevel = 'critical'" 
+                            class="flex-1 py-2 rounded-lg text-xs font-bold border transition-all"
+                            [class]="registerAlertLevel === 'critical' ? 'bg-red-600 text-white border-red-500 shadow-md' : 'bg-gray-900/50 text-gray-500 border-gray-700 hover:bg-gray-800 hover:text-gray-300'">
+                      Crítico
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-gray-300 uppercase tracking-wider mb-1.5">Carpeta</label>
+                  <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                      <svg class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                    </div>
+                    <select [(ngModel)]="registerFolderId" 
+                            class="w-full bg-gray-900/80 text-white rounded-xl pl-9 pr-4 py-3 text-sm font-medium border border-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all appearance-none cursor-pointer">
+                      <option [ngValue]="null">Sin carpeta</option>
+                      @for (folder of folders(); track folder.id) {
+                        <option [ngValue]="folder.id">{{ folder.name }}</option>
+                      }
+                    </select>
+                    <div class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
+                      <svg class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">Imagen (JPEG/PNG) <span class="text-red-400">*</span></label>
+                
+                <!-- Styled File Input Area -->
+                <div class="relative group flex justify-center px-4 pt-5 pb-5 border-2 border-dashed rounded-xl transition-colors cursor-pointer"
+                     [class]="isDragging() ? 'border-blue-400 bg-blue-900/20' : 'border-gray-600 hover:border-blue-500 hover:bg-blue-900/10'"
+                     (dragover)="onDragOver($event)" 
+                     (dragleave)="onDragLeave($event)" 
+                     (drop)="onDrop($event)">
+                  <div class="space-y-2 text-center pointer-events-none">
+                    <svg class="mx-auto h-8 w-8 text-gray-500 group-hover:text-blue-400 transition-colors" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                      <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <div class="flex text-sm text-gray-400 justify-center">
+                      <label class="relative rounded-md font-bold text-blue-500 hover:text-blue-400 outline-none pointer-events-auto cursor-pointer">
+                        <span>Explorar archivos</span>
+                        <input type="file" multiple accept="image/jpeg,image/png" (change)="onRegisterFile($event)" class="sr-only">
+                      </label>
+                      <p class="pl-1">o arrastrar aquí</p>
+                    </div>
+                    @if (registerFiles.length === 1) {
+                      <p class="text-xs text-blue-300 font-bold bg-blue-900/30 inline-block px-3 py-1 rounded-full border border-blue-500/30 shadow-sm mt-2">
+                        {{ registerFiles[0].name }}
+                      </p>
+                    } @else if (registerFiles.length > 1) {
+                      <p class="text-xs text-blue-300 font-bold bg-blue-900/30 inline-block px-3 py-1 rounded-full border border-blue-500/30 shadow-sm mt-2">
+                        {{ registerFiles.length }} archivos seleccionados
+                      </p>
+                    } @else {
+                      <p class="text-xs text-gray-500">Puedes seleccionar múltiples imágenes</p>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <div class="pt-3">
+                <button (click)="register()" [disabled]="registerLoading() || (registerFiles.length === 1 && !registerName.trim()) || registerFiles.length === 0"
+                  class="w-full py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 disabled:from-gray-700 disabled:to-gray-700 disabled:text-gray-500 text-white rounded-xl text-base font-bold shadow-[0_0_20px_rgba(37,99,235,0.3)] active:scale-[0.98] transition-all flex justify-center items-center gap-2">
+                  @if (registerLoading()) {
+                    <svg class="animate-spin -ml-1 mr-1 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+                    @if (batchTotal() > 0) {
+                      Subiendo {{ batchProgress() }}/{{ batchTotal() }}...
+                    } @else {
+                      Procesando Imagen...
+                    }
                   } @else {
-                    <svg class="w-4 h-4 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                    <span class="text-gray-300 truncate">{{ r.name }}</span>
-                    <span class="text-red-400/80 text-[10px] ml-auto flex-shrink-0 max-w-[50%] truncate" [title]="r.error || ''">{{ r.error }}</span>
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Completar Registro
                   }
+                </button>
+              </div>
+            </div>
+
+            <!-- Right Column: Status & Feedback -->
+            <div class="lg:col-span-7 flex flex-col space-y-4">
+              
+              @if (!duplicateWarning() && !registerMsg() && !registerError() && batchResults().length === 0 && !registerLoading()) {
+                <div class="h-full min-h-[300px] flex flex-col items-center justify-center text-gray-500 border-2 border-dashed border-gray-700/30 rounded-2xl p-8 text-center bg-gray-900/20">
+                  <svg class="w-20 h-20 text-gray-700 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                  <p class="text-lg font-bold text-gray-400">Panel de Resultados</p>
+                  <p class="text-sm mt-2 text-gray-500 max-w-sm">
+                    Aquí aparecerán los detalles del lote de carga, validaciones de rostros, o posibles advertencias de duplicados.
+                  </p>
                 </div>
               }
-            </div>
-            }
-          </div>
 
+              <!-- Progress bar for batch uploads -->
+              @if (batchTotal() > 0 && registerLoading()) {
+              <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700/50 shadow-inner">
+                <div class="flex justify-between items-center text-sm mb-2">
+                  <span class="text-gray-300 font-medium">
+                    Procesando: <span class="text-blue-400 font-bold ml-1">{{ batchCurrentFile() }}</span>
+                  </span>
+                  <span class="text-gray-200 font-bold bg-gray-700 px-2.5 py-0.5 rounded-md">{{ batchProgress() }} / {{ batchTotal() }}</span>
+                </div>
+                <!-- Progress bar -->
+                <div class="w-full bg-gray-900 rounded-full h-4 overflow-hidden border border-gray-700">
+                  <div class="h-full rounded-full transition-all duration-300 ease-out relative"
+                       [style.width.%]="(batchProgress() / batchTotal()) * 100"
+                       [class]="batchResults().length > 0 && batchResults()[batchResults().length - 1]?.ok === false ? 'bg-gradient-to-r from-blue-600 to-yellow-500' : 'bg-gradient-to-r from-blue-600 to-blue-400'">
+                       <div class="absolute inset-0 bg-white/20 animate-pulse"></div>
+                  </div>
+                </div>
+                <div class="flex gap-4 mt-3 text-sm font-bold">
+                  <div class="flex items-center gap-1.5 text-emerald-400 bg-emerald-900/20 px-2 py-1 rounded-lg border border-emerald-500/20">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    {{ batchResults().filter(r => r.ok).length }} exitosos
+                  </div>
+                  @if (batchResults().filter(r => !r.ok).length > 0) {
+                    <div class="flex items-center gap-1.5 text-red-400 bg-red-900/20 px-2 py-1 rounded-lg border border-red-500/20">
+                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                      {{ batchResults().filter(r => !r.ok).length }} rechazados
+                    </div>
+                  }
+                </div>
+              </div>
+              }
+
+              @if (duplicateWarning(); as dup) {
+              <div class="bg-gray-800/90 border-2 border-amber-500/40 rounded-2xl overflow-hidden shadow-2xl flex-1 animate-in fade-in zoom-in duration-300">
+                <!-- Header -->
+                <div class="bg-gradient-to-r from-amber-600/30 to-amber-600/10 px-5 py-3.5 flex items-center gap-3 border-b border-amber-500/30">
+                  <svg class="w-6 h-6 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                  <span class="text-amber-300 font-bold text-base">Rostro duplicado detectado</span>
+                  <span class="ml-auto bg-amber-500/20 text-amber-300 text-xs font-bold px-3 py-1 rounded-full border border-amber-500/30 shadow-inner">
+                    {{ (dup.similarity * 100).toFixed(1) }}% similitud
+                  </span>
+                </div>
+                <!-- Photo comparison -->
+                <div class="p-5">
+                  <div class="flex flex-col sm:flex-row items-stretch gap-6">
+                    <!-- Existing person card -->
+                    <div class="flex-1 bg-gray-900/60 rounded-xl p-4 border border-gray-700/50 text-center space-y-3 relative overflow-hidden group">
+                      <div class="absolute inset-0 bg-gradient-to-b from-transparent to-black/50 pointer-events-none"></div>
+                      <p class="text-xs font-bold text-amber-400/80 uppercase tracking-widest relative z-10 bg-amber-900/30 inline-block px-3 py-1 rounded-lg border border-amber-500/20">Ya registrado</p>
+                      <img [src]="dup.existingPhotoUrl" class="w-36 h-36 rounded-xl object-cover border-[3px] border-amber-500/40 shadow-xl mx-auto relative z-10 transition-transform group-hover:scale-105" alt="Existente">
+                      <div class="relative z-10 bg-gray-800/80 py-2 px-3 rounded-lg border border-gray-600/50">
+                        <p class="text-lg text-white font-bold truncate">{{ dup.existingName }}</p>
+                        @if (dup.existingRegisteredAt) {
+                          <div class="flex items-center justify-center gap-1.5 text-xs text-gray-400 mt-1">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            Registrado: {{ dup.existingRegisteredAt | date:'dd/MM/yyyy HH:mm' }}
+                          </div>
+                        }
+                      </div>
+                    </div>
+                    <!-- VS indicator -->
+                    <div class="flex flex-col items-center justify-center gap-1 px-1">
+                      <div class="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500/20 to-blue-500/20 border border-gray-600 flex items-center justify-center shadow-lg">
+                        <svg class="w-6 h-6 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                      </div>
+                    </div>
+                    <!-- New photo card -->
+                    <div class="flex-1 bg-gray-900/60 rounded-xl p-4 border border-gray-700/50 text-center space-y-3 relative overflow-hidden group">
+                      <div class="absolute inset-0 bg-gradient-to-b from-transparent to-blue-900/20 pointer-events-none"></div>
+                      <p class="text-xs font-bold text-blue-400/80 uppercase tracking-widest relative z-10 bg-blue-900/30 inline-block px-3 py-1 rounded-lg border border-blue-500/20">Nueva foto</p>
+                      <img [src]="dup.newPhotoUrl" class="w-36 h-36 rounded-xl object-cover border-[3px] border-blue-500/40 shadow-xl mx-auto relative z-10 transition-transform group-hover:scale-105" alt="Nueva">
+                      <div class="relative z-10 bg-gray-800/80 py-2 px-3 rounded-lg border border-gray-600/50">
+                        <p class="text-lg text-white font-bold truncate">{{ registerName || 'Desconocido' }}</p>
+                        @if (dup.newPhotoDate) {
+                          <div class="flex items-center justify-center gap-1.5 text-xs text-gray-400 mt-1">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            Tomada: {{ dup.newPhotoDate | date:'dd/MM/yyyy HH:mm' }}
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Action buttons -->
+                  <div class="flex flex-col sm:flex-row gap-3 mt-6">
+                    <button (click)="updateExistingPerson()" [disabled]="registerLoading()"
+                      class="flex-1 py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-900/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                      @if (registerLoading()) {
+                        <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+                      } @else {
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                      }
+                      Actualizar "{{ dup.existingName }}"
+                    </button>
+                    <button (click)="forceRegisterNew()" [disabled]="registerLoading()"
+                      class="flex-1 py-3 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-gray-100 rounded-xl text-sm font-bold shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2 border border-gray-600">
+                      @if (registerLoading()) {
+                        <svg class="animate-spin h-5 w-5 text-gray-100" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+                      } @else {
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+                      }
+                      Registrar como nueva
+                    </button>
+                    <button (click)="cancelDuplicateWarning()" [disabled]="registerLoading()"
+                      class="py-3 px-4 bg-red-900/40 hover:bg-red-800/60 disabled:opacity-50 text-red-300 rounded-xl text-sm font-bold transition-all active:scale-[0.98] border border-red-500/20"
+                      title="Descartar">
+                      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              }
+
+              @if (registerMsg()) { 
+              <div class="bg-emerald-900/30 border border-emerald-500/40 text-emerald-300 px-5 py-4 rounded-xl text-base font-medium flex items-center gap-3 shadow-lg">
+                <svg class="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                {{ registerMsg() }}
+              </div>
+              }
+              @if (registerError()) { 
+              <div class="bg-red-900/30 border border-red-500/40 text-red-300 px-5 py-4 rounded-xl text-base font-medium flex items-center gap-3 shadow-lg">
+                <svg class="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                {{ registerError() }}
+              </div>
+              }
+
+              <!-- Batch results detail (shows rejected files) -->
+              @if (batchResults().length > 0 && !registerLoading()) {
+              <div class="bg-gray-900/60 border border-gray-600/50 rounded-xl p-4 max-h-[400px] overflow-y-auto custom-scrollbar flex-1">
+                <div class="flex items-center justify-between mb-3 border-b border-gray-700/50 pb-2">
+                  <p class="text-sm font-bold text-gray-300 uppercase tracking-wider">Detalle del Lote</p>
+                  <span class="bg-gray-800 text-gray-400 text-xs px-2 py-1 rounded-lg border border-gray-700">{{ batchResults().length }} archivos procesados</span>
+                </div>
+
+                <!-- Masive Actions block -->
+                @if (batchResults().filter(r => r.isDuplicate).length > 0) {
+                  <div class="mb-4 bg-gray-800/60 p-3 rounded-xl border border-gray-700/50">
+                    <div class="flex flex-col gap-2">
+                      <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-gray-400">Acciones masivas ({{ batchResults().filter(r => r.isDuplicate).length }} duplicados)</span>
+                      </div>
+                      
+                      @if (batchConfirmAction() === null) {
+                        <div class="flex gap-2">
+                          <button (click)="setBatchConfirmAction('update')" class="flex-1 py-1.5 px-2 bg-blue-600/80 hover:bg-blue-500 text-white rounded-lg text-[10px] sm:text-xs font-bold transition-colors">Actualizar todas</button>
+                          <button (click)="setBatchConfirmAction('force')" class="flex-1 py-1.5 px-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-[10px] sm:text-xs font-bold transition-colors">Nuevas todas</button>
+                          <button (click)="setBatchConfirmAction('delete')" class="flex-1 py-1.5 px-2 bg-red-900/50 hover:bg-red-800/60 text-red-300 rounded-lg text-[10px] sm:text-xs font-bold transition-colors">Eliminar todas</button>
+                        </div>
+                      } @else {
+                        <div class="flex flex-col bg-gray-900/80 border border-amber-500/40 p-2.5 rounded-lg gap-3">
+                          <p class="text-xs text-amber-400 font-medium text-center">
+                            ¿Confirmar 
+                            @if (batchConfirmAction() === 'update') { <b>actualizar todas</b> las caras existentes? }
+                            @else if (batchConfirmAction() === 'force') { registrar todas como <b>personas nuevas</b>? }
+                            @else { <b>eliminar de la lista</b> todos los duplicados? }
+                          </p>
+                          <div class="flex gap-2 justify-center">
+                            <button (click)="executeBatchAction()" [disabled]="batchActionLoading()" class="flex-1 max-w-[140px] py-1.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white rounded-md text-xs font-bold flex items-center justify-center gap-1.5 transition-colors">
+                              @if (batchActionLoading()) {
+                                <svg class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+                              }
+                              Confirmar
+                            </button>
+                            <button (click)="setBatchConfirmAction(null)" [disabled]="batchActionLoading()" class="flex-1 max-w-[140px] py-1.5 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-gray-200 rounded-md text-xs font-bold transition-colors">Cancelar</button>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+                
+                <div class="space-y-2">
+                  @for (r of batchResults(); track r.name) {
+                    <div class="flex flex-col bg-gray-800/40 rounded-lg p-2.5 border border-gray-700/50 hover:bg-gray-800/80 transition-colors">
+                      <div class="flex items-center gap-3 text-sm">
+                        @if (r.ok) {
+                          <div class="w-7 h-7 rounded-full bg-emerald-900/30 flex items-center justify-center border border-emerald-500/30 flex-shrink-0">
+                            <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                          </div>
+                          <span class="text-gray-200 font-medium truncate flex-1">{{ r.name }}</span>
+                          <span class="text-xs text-emerald-400 font-bold bg-emerald-900/20 px-2 py-0.5 rounded border border-emerald-500/20">Éxito</span>
+                        } @else if (r.isDuplicate) {
+                          <div class="w-7 h-7 rounded-full bg-amber-900/30 flex items-center justify-center border border-amber-500/30 flex-shrink-0">
+                            <svg class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                          </div>
+                          <span class="text-gray-200 font-medium truncate flex-1">{{ r.name }}</span>
+                          <span class="text-amber-400/90 text-[11px] max-w-[40%] truncate font-medium bg-amber-900/20 px-2 py-0.5 rounded border border-amber-500/20" [title]="r.error || ''">{{ r.error }}</span>
+                        } @else {
+                          <div class="w-7 h-7 rounded-full bg-red-900/30 flex items-center justify-center border border-red-500/30 flex-shrink-0">
+                            <svg class="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                          </div>
+                          <span class="text-gray-200 font-medium truncate flex-1">{{ r.name }}</span>
+                          <span class="text-red-400/90 text-[11px] max-w-[40%] truncate font-medium bg-red-900/20 px-2 py-0.5 rounded border border-red-500/20" [title]="r.error || ''">{{ r.error }}</span>
+                        }
+                      </div>
+
+                      @if (r.isDuplicate) {
+                        <div class="ml-10 mt-3 bg-gray-900/80 rounded-xl border border-amber-500/20 overflow-hidden shadow-inner p-3">
+                          <div class="flex flex-col sm:flex-row items-center gap-4">
+                            <!-- Existing photo -->
+                            <div class="text-center w-24 flex-shrink-0">
+                              <p class="text-[10px] text-amber-500 font-bold uppercase mb-1.5">Existente</p>
+                              <img [src]="getExistingPhotoUrl(r.existingId!)" class="w-16 h-16 rounded-xl object-cover border-[2px] border-amber-500/40 shadow mx-auto" alt="Existente">
+                              <p class="text-xs text-amber-300 font-bold mt-1.5 truncate" [title]="r.existingName">{{ r.existingName }}</p>
+                            </div>
+                            <!-- Arrow -->
+                            <div class="flex-shrink-0 hidden sm:block">
+                              <div class="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
+                                <svg class="w-4 h-4 text-amber-400/60" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                              </div>
+                            </div>
+                            <!-- New photo -->
+                            <div class="text-center w-24 flex-shrink-0">
+                              <p class="text-[10px] text-blue-400 font-bold uppercase mb-1.5">Nuevo</p>
+                              @if (registerFiles[r.fileIndex!]) {
+                                <img [src]="getBatchFilePreview(r)" class="w-16 h-16 rounded-xl object-cover border-[2px] border-blue-500/40 shadow mx-auto" alt="Nueva">
+                              }
+                              <p class="text-xs text-blue-300 font-bold mt-1.5 truncate" [title]="r.name">{{ r.name }}</p>
+                            </div>
+                            <!-- Actions -->
+                            <div class="flex sm:flex-col gap-2 ml-auto w-full sm:w-auto mt-3 sm:mt-0">
+                              <button (click)="batchUpdateExisting(r)" [disabled]="r.updating"
+                                class="flex-1 px-3 py-1.5 bg-blue-600/90 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition-all whitespace-nowrap shadow-md flex items-center justify-center gap-1.5">
+                                @if (r.updating) {
+                                  <svg class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+                                } @else {
+                                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                }
+                                Actualizar
+                              </button>
+                              <button (click)="batchForceRegister(r)" [disabled]="r.updating"
+                                class="flex-1 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-gray-200 rounded-lg text-xs font-bold transition-all whitespace-nowrap shadow-md flex items-center justify-center gap-1.5 border border-gray-600">
+                                @if (r.updating) {
+                                  <svg class="animate-spin h-3.5 w-3.5 text-gray-200" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+                                } @else {
+                                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+                                }
+                                Nueva
+                              </button>
+                              <button (click)="batchDismissDuplicate(r)" [disabled]="r.updating"
+                                class="flex-1 px-3 py-1.5 bg-red-900/30 hover:bg-red-900/50 disabled:opacity-50 text-red-400 rounded-lg text-xs font-bold transition-all whitespace-nowrap shadow-md flex items-center justify-center gap-1.5 border border-red-500/20">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                Eliminar
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+              }
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -484,71 +697,69 @@
 
     <!-- ═══════════ TAB: IDENTIFY (SCAN) ═══════════ -->
     @if (activeTab() === 'identify') {
-    <div class="flex flex-col h-full space-y-6">
+    <div class="flex flex-col h-full space-y-3">
       
       <!-- Top Action Bar (Upload) -->
-      <div class="bg-gray-800/80 backdrop-blur rounded-2xl p-5 border border-gray-700/50 shadow-lg flex flex-col md:flex-row items-center gap-5 shrink-0 relative overflow-hidden">
+      <div class="bg-gray-800/80 backdrop-blur rounded-xl p-3 border border-gray-700/50 shadow-lg flex flex-col md:flex-row items-center gap-3 shrink-0 relative overflow-hidden">
         <!-- Decoration -->
         <div class="absolute right-0 top-0 bottom-0 w-64 bg-gradient-to-l from-purple-900/20 to-transparent pointer-events-none"></div>
 
-        <div class="w-14 h-14 bg-purple-900/30 rounded-full border border-purple-500/30 flex items-center justify-center shrink-0">
-          <svg class="w-7 h-7 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
+        <div class="w-10 h-10 bg-purple-900/30 rounded-full border border-purple-500/30 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
         </div>
 
-        <div class="flex-1 w-full relative z-10 space-y-1">
-          <label class="block text-sm font-bold text-gray-200">Foto a inspeccionar</label>
-          <div class="flex items-center gap-3 w-full">
+        <div class="flex-1 w-full relative z-10">
+          <div class="flex items-center gap-2 w-full">
             <div class="relative flex-1 bg-gray-900/60 border border-gray-600 rounded-lg pr-2 py-1.5 pl-3 hover:border-purple-400 focus-within:border-purple-500 transition-colors flex items-center">
-              <span class="text-xs text-gray-400 font-medium whitespace-nowrap mr-3 shrink-0">Examinar:</span>
+              <span class="text-xs text-gray-400 font-medium whitespace-nowrap mr-2 shrink-0">Foto:</span>
               <input type="file" accept="image/jpeg,image/png" (change)="onIdentifyFile($event)"
-                     class="w-full text-sm text-gray-300 file:hidden cursor-pointer bg-transparent outline-none truncate" />
+                     class="w-full text-xs text-gray-300 file:hidden cursor-pointer bg-transparent outline-none truncate" />
               @if (identifyFile) {
-                <span class="absolute right-3 text-xs text-purple-400 font-bold bg-purple-900/40 px-2 py-0.5 rounded shadow-sm shrink-0 border border-purple-500/30">Cargado</span>
+                <span class="absolute right-2 text-[10px] text-purple-400 font-bold bg-purple-900/40 px-1.5 py-0.5 rounded shadow-sm shrink-0 border border-purple-500/30">OK</span>
               }
             </div>
           </div>
         </div>
 
         <button (click)="identify()" [disabled]="identifyLoading() || !identifyFile"
-          class="w-full md:w-auto px-8 py-3.5 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 disabled:from-gray-700 disabled:to-gray-700 disabled:text-gray-500 text-white rounded-xl font-bold shadow-[0_0_20px_rgba(147,51,234,0.3)] active:scale-[0.98] transition-all flex justify-center items-center gap-2 shrink-0 relative z-10 border border-purple-400/20">
+          class="w-full md:w-auto px-5 py-2 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 disabled:from-gray-700 disabled:to-gray-700 disabled:text-gray-500 text-white rounded-xl text-sm font-bold shadow-lg active:scale-[0.98] transition-all flex justify-center items-center gap-2 shrink-0 relative z-10 border border-purple-400/20">
           @if (identifyLoading()) {
-            <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+            <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
             Analizando...
           } @else {
-            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-            Escanear Rostros
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+            Escanear
           }
         </button>
       </div>
 
       @if (identifyError()) { 
-      <div class="bg-red-900/30 border border-red-500/40 text-red-300 px-4 py-3 rounded-xl text-sm flex items-start gap-3 w-full">
-        <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <div class="bg-red-900/30 border border-red-500/40 text-red-300 px-3 py-2 rounded-xl text-xs flex items-start gap-2 w-full">
+        <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         {{ identifyError() }}
       </div>
       }
 
-      <!-- Split Layout for Results: Image on Left, Matches on Right -->
+      <!-- Split Layout for Results -->
       @if (identifyPreviewUrl() || identifyResult()) {
-      <div class="flex-1 flex flex-col xl:flex-row gap-6 min-h-0">
+      <div class="flex-1 flex flex-col xl:flex-row gap-3 min-h-0">
         
-        <!-- Left Pane: Uploaded image preview with boxes -->
-        <div class="w-full xl:w-7/12 flex flex-col bg-gray-800/80 backdrop-blur rounded-2xl border border-gray-700/50 shadow-lg overflow-hidden shrink-0">
-          <div class="px-5 py-3.5 bg-gray-850/80 border-b border-gray-700/50 flex items-center justify-between shrink-0">
-            <h3 class="font-bold text-gray-200 flex items-center gap-2 text-sm uppercase tracking-wider">
-              <svg class="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-              Escaneo Original
+        <!-- Left Pane: Uploaded image -->
+        <div class="w-full xl:w-7/12 flex flex-col bg-gray-800/80 backdrop-blur rounded-xl border border-gray-700/50 shadow-lg overflow-hidden shrink-0">
+          <div class="px-4 py-2 bg-gray-850/80 border-b border-gray-700/50 flex items-center justify-between shrink-0">
+            <h3 class="font-bold text-gray-200 flex items-center gap-2 text-xs uppercase tracking-wider">
+              <svg class="w-3.5 h-3.5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              Escaneo
             </h3>
-            <button class="text-[10px] bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded text-gray-300 border border-gray-600 transition-colors" (click)="toggleExpand()">Ver Pantalla Completa</button>
+            <button class="text-[10px] bg-gray-700 hover:bg-gray-600 px-2 py-0.5 rounded text-gray-300 border border-gray-600 transition-colors" (click)="toggleExpand()">Ampliar</button>
           </div>
           
-          <div class="flex-1 p-4 flex flex-col items-center justify-center relative min-h-[300px]">
+          <div class="flex-1 p-2 flex flex-col items-center justify-center relative min-h-[250px]">
             @if (identifyPreviewUrl()) {
               <div class="relative inline-block max-w-full max-h-full">
-                <!-- Drop shadow base for image -->
                 <div class="absolute inset-0 bg-black/50 blur-xl rounded-xl"></div>
                 <img [src]="identifyPreviewUrl()" alt="Imagen consultada"
-                  class="relative max-h-[50vh] xl:max-h-none xl:h-[calc(100vh-24rem)] object-contain rounded-lg border border-gray-700 shadow-2xl cursor-zoom-in" 
+                  class="relative max-h-[50vh] xl:max-h-none xl:h-[calc(100vh-20rem)] object-contain rounded-lg border border-gray-700 shadow-2xl cursor-zoom-in" 
                   (click)="toggleExpand()"
                   (load)="onImageLoad($event)" />
                 
@@ -602,28 +813,28 @@
           </div>
         </div>
 
-        <!-- Right Pane: Scrollable List of Matched Persons -->
-        <div class="w-full xl:w-5/12 flex flex-col bg-gray-800/80 backdrop-blur rounded-2xl border border-gray-700/50 shadow-lg overflow-hidden shrink-0">
-          <div class="px-5 py-3.5 bg-gray-850/80 border-b border-gray-700/50 flex items-center justify-between shrink-0">
-            <h3 class="font-bold text-gray-200 flex items-center gap-2 text-sm uppercase tracking-wider">
-              <svg class="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+        <!-- Right Pane: Matched Persons -->
+        <div class="w-full xl:w-5/12 flex flex-col bg-gray-800/80 backdrop-blur rounded-xl border border-gray-700/50 shadow-lg overflow-hidden shrink-0">
+          <div class="px-4 py-2 bg-gray-850/80 border-b border-gray-700/50 flex items-center justify-between shrink-0">
+            <h3 class="font-bold text-gray-200 flex items-center gap-2 text-xs uppercase tracking-wider">
+              <svg class="w-3.5 h-3.5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
               Resultados
             </h3>
             @if (identifyResult()) {
-              <span class="bg-gray-700 px-2 py-0.5 rounded text-xs font-bold text-gray-300 border border-gray-600">{{ identifyResult()!.total_faces }}</span>
+              <span class="bg-gray-700 px-2 py-0.5 rounded text-[10px] font-bold text-gray-300 border border-gray-600">{{ identifyResult()!.total_faces }}</span>
             }
           </div>
           
-          <div class="flex-1 overflow-y-auto p-4 custom-scrollbar bg-gray-900/30">
+          <div class="flex-1 overflow-y-auto p-3 custom-scrollbar bg-gray-900/30">
             @if (!identifyResult()) {
-              <div class="h-full flex flex-col items-center justify-center text-gray-500 opacity-50 px-8 text-center text-sm">
-                <svg class="w-12 h-12 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                Los análisis faciales aparecerán aquí una vez escaneada la imagen.
+              <div class="h-full flex flex-col items-center justify-center text-gray-500 opacity-50 px-6 text-center text-xs">
+                <svg class="w-10 h-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                Los análisis aparecerán aquí una vez escaneada la imagen.
               </div>
             } @else {
-              <div class="space-y-4">
+              <div class="space-y-3">
                 @for (face of identifyResult()!.faces; track $index) {
-                <div class="bg-gray-800 rounded-xl border p-4 shadow-md transition-all relative overflow-hidden group"
+                <div class="bg-gray-800 rounded-xl border p-3 shadow-md transition-all relative overflow-hidden group"
                      [class]="face.identified ? 'border-emerald-500/30 hover:border-emerald-500/60' : (face.closest_match ? 'border-orange-500/30 hover:border-orange-500/60' : 'border-red-500/30 hover:border-red-500/60')">
                   
                   <!-- Soft bg gradient depending on status -->
@@ -634,7 +845,7 @@
                     
                     <!-- Circular Photo (DB match) -->
                     <div class="shrink-0">
-                      <div class="w-16 h-16 rounded-full overflow-hidden bg-gray-900 border-2 shadow-inner p-0.5"
+                      <div class="w-12 h-12 rounded-full overflow-hidden bg-gray-900 border-2 shadow-inner p-0.5"
                            [class]="face.identified ? 'border-emerald-500/50' : (face.closest_match ? 'border-orange-500/50' : 'border-red-500/50')">
                         <div class="w-full h-full rounded-full overflow-hidden relative bg-gray-800">
                           @if (face.identified && matchedPerson(face.name); as p) {
@@ -643,7 +854,7 @@
                           <img [src]="photoUrl(p.id)" alt="Candidato" class="absolute inset-0 w-full h-full object-cover opacity-60 grayscale" (error)="$event.target['style'].display='none'" />
                           } @else {
                           <div class="absolute inset-0 flex items-center justify-center text-gray-600">
-                            <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
                           </div>
                           }
                         </div>
@@ -651,9 +862,9 @@
                     </div>
 
                     <!-- Details -->
-                    <div class="flex-1 min-w-0 pr-2 pb-1 text-sm pt-0.5 flex flex-col justify-center">
-                      <div class="flex items-center gap-2 mb-2 flex-wrap">
-                        <span class="font-black text-base truncate tracking-tight drop-shadow-sm"
+                    <div class="flex-1 min-w-0 pr-2 pb-1 text-xs pt-0.5 flex flex-col justify-center">
+                      <div class="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                        <span class="font-black text-sm truncate tracking-tight drop-shadow-sm"
                           [class]="face.identified ? 'text-emerald-400' : (face.closest_match ? 'text-orange-400' : 'text-red-400')">
                           {{ face.identified ? face.name : (face.closest_match ? 'Ref: ' + face.closest_match.name : 'Desconocido') }}
                         </span>
@@ -668,7 +879,7 @@
                         }
                       </div>
 
-                      <div class="space-y-2 mt-auto w-full">
+                      <div class="space-y-1.5 mt-auto w-full">
                         
                         <!-- Similarity Bar (only if not completely unknown) -->
                         @if (face.similarity !== undefined) {
@@ -722,12 +933,12 @@
 
   <!-- ══ FULLSCREEN MODAL ══ -->
   @if (isExpanded() && identifyPreviewUrl()) {
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 cursor-pointer" (click)="toggleExpand()">
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm p-3 cursor-pointer" (click)="toggleExpand()">
     <!-- Close button -->
     <button
-      class="absolute top-6 right-6 z-[60] bg-gray-800/80 text-white hover:bg-red-500 w-12 h-12 rounded-full flex items-center justify-center text-3xl transition-colors cursor-pointer shadow-2xl border border-gray-600 hover:border-red-400"
-      title="Cerrar (O haz click afuera)" (click)="toggleExpand()" (click)="$event.stopPropagation()">
-      <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      class="absolute top-4 right-4 z-[60] bg-gray-800/80 text-white hover:bg-red-500 w-10 h-10 rounded-full flex items-center justify-center text-2xl transition-colors cursor-pointer shadow-2xl border border-gray-600 hover:border-red-400"
+      title="Cerrar" (click)="toggleExpand()" (click)="$event.stopPropagation()">
+      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
     </button>
 
     <!-- Image container -->
