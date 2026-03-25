@@ -404,11 +404,40 @@
           </div>
 
           <div class="pt-4 space-y-3">
+            <!-- Progress bar for batch uploads -->
+            @if (batchTotal() > 0 && registerLoading()) {
+            <div class="space-y-2">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-gray-300 font-medium">
+                  Procesando: <span class="text-blue-400">{{ batchCurrentFile() }}</span>
+                </span>
+                <span class="text-gray-400 font-bold">{{ batchProgress() }} / {{ batchTotal() }}</span>
+              </div>
+              <!-- Progress bar -->
+              <div class="w-full bg-gray-700 rounded-full h-3 overflow-hidden">
+                <div class="h-full rounded-full transition-all duration-300 ease-out"
+                     [style.width.%]="(batchProgress() / batchTotal()) * 100"
+                     [class]="batchResults().length > 0 && batchResults()[batchResults().length - 1]?.ok === false ? 'bg-gradient-to-r from-blue-600 to-yellow-500' : 'bg-gradient-to-r from-blue-600 to-blue-400'">
+                </div>
+              </div>
+              <div class="flex gap-3 text-[11px]">
+                <span class="text-emerald-400">{{ batchResults().filter(r => r.ok).length }} exitosos</span>
+                @if (batchResults().filter(r => !r.ok).length > 0) {
+                  <span class="text-red-400">{{ batchResults().filter(r => !r.ok).length }} rechazados</span>
+                }
+              </div>
+            </div>
+            }
+
             <button (click)="register()" [disabled]="registerLoading() || (registerFiles.length === 1 && !registerName.trim()) || registerFiles.length === 0"
               class="w-full py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 disabled:from-gray-700 disabled:to-gray-700 disabled:text-gray-500 text-white rounded-xl font-bold shadow-lg shadow-blue-900/30 active:scale-[0.98] transition-all flex justify-center items-center gap-2">
               @if (registerLoading()) {
                 <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
-                Procesando Imagen...
+                @if (batchTotal() > 0) {
+                  Subiendo {{ batchProgress() }}/{{ batchTotal() }}...
+                } @else {
+                  Procesando Imagen...
+                }
               } @else {
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 Completar Registro
@@ -425,6 +454,25 @@
             <div class="bg-red-900/30 border border-red-500/40 text-red-300 px-4 py-3 rounded-xl text-sm flex items-start gap-3">
               <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
               {{ registerError() }}
+            </div>
+            }
+
+            <!-- Batch results detail (shows rejected files) -->
+            @if (batchResults().length > 0 && !registerLoading()) {
+            <div class="bg-gray-900/60 border border-gray-600/50 rounded-xl p-3 max-h-48 overflow-y-auto custom-scrollbar space-y-1.5">
+              <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Detalle de carga</p>
+              @for (r of batchResults(); track r.name) {
+                <div class="flex items-center gap-2 text-xs py-1 border-b border-gray-800/50 last:border-0">
+                  @if (r.ok) {
+                    <svg class="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span class="text-gray-300 truncate">{{ r.name }}</span>
+                  } @else {
+                    <svg class="w-4 h-4 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <span class="text-gray-300 truncate">{{ r.name }}</span>
+                    <span class="text-red-400/80 text-[10px] ml-auto flex-shrink-0 max-w-[50%] truncate" [title]="r.error || ''">{{ r.error }}</span>
+                  }
+                </div>
+              }
             </div>
             }
           </div>

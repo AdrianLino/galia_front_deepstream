@@ -79,6 +79,16 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   hoursBack = 24;
   windowSeconds = 180;
 
+  // ── Forensic person dropdown ───────────────────────────────────────────
+  forensicPersons = signal<Person[]>([]);
+  showForensicDropdown = signal(false);
+  filteredForensicPersons = computed(() => {
+    const q = this.searchInput.toLowerCase().trim();
+    const list = this.forensicPersons();
+    if (!q) return list;
+    return list.filter(p => p.name.toLowerCase().includes(q));
+  });
+
   // ── Tracking ──────────────────────────────────────────────────────────────
   enrolledPersons = signal<Person[]>([]);
   trackedPerson = signal<Person | null>(null);
@@ -377,6 +387,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     this.mode.set(m);
     if (m === 'live') this.startLive();
     if (m === 'tracking') this.loadEnrolledPersons();
+    if (m === 'forensic') this.loadForensicPersons();
   }
 
   // ── LIVE MODE ──────────────────────────────────────────────────────────────
@@ -441,9 +452,23 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   }
 
   // ── FORENSIC MODE ──────────────────────────────────────────────────────────
+  private loadForensicPersons(): void {
+    this.facesSvc.listPersons().subscribe({
+      next: res => this.forensicPersons.set(res.persons),
+      error: () => this.forensicPersons.set([]),
+    });
+  }
+
+  selectForensicPerson(person: Person): void {
+    this.searchInput = person.name;
+    this.showForensicDropdown.set(false);
+    this.searchRoute();
+  }
+
   searchRoute(): void {
     const name = this.searchInput.trim();
     if (!name) return;
+    this.showForensicDropdown.set(false);
     this.searchedName.set(name);
     this.loadingRoute.set(true);
     this.routeError.set('');

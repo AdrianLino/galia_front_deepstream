@@ -21,7 +21,7 @@ import {
 } from '../../core/models/stream.model';
 import { FaceDisplayMode } from '../../core/models/alert.model';
 
-export type ViewMode = 'mosaic' | 'single';
+export type ViewMode = 'mosaic' | 'single' | 'paged';
 type HeightPreset = 'basement' | 'ceiling' | 'wall-high' | 'wall-mid' | 'turnstile' | 'custom';
 
 @Component({
@@ -64,6 +64,14 @@ export class StreamComponent implements OnInit, OnDestroy {
   viewMode = signal<ViewMode>('mosaic');
   selectedCamera = signal<number>(0);
   outputMode: 'mjpeg' | 'rtsp' | 'display' = 'mjpeg';
+
+  // ── Paged mosaic ───────────────────────────────────────────────────────
+  mosaicPage = signal(1);
+  readonly mosaicPerPage = 16;
+  mosaicTotalPages = signal(1);
+  mosaicPageNumbers = computed(() =>
+    Array.from({ length: this.mosaicTotalPages() }, (_, i) => i + 1)
+  );
 
   readonly viewUrl = this.streamService.viewUrl;
 
@@ -193,12 +201,20 @@ export class StreamComponent implements OnInit, OnDestroy {
     () => `${this.viewUrl}?camera=${this.selectedCamera()}&_t=${this.streamRevision()}`
   );
 
-  /** Unified stream URL — switches automatically between mosaic / single.
+  /** Paged mosaic — shows mosaicPerPage cameras per page */
+  pagedMosaicUrl = computed(
+    () => `${this.viewUrl}?page=${this.mosaicPage()}&per_page=${this.mosaicPerPage}&_t=${this.streamRevision()}`
+  );
+
+  /** Unified stream URL — switches automatically between mosaic / single / paged.
    *  Using a single <img> avoids destroy/create cycles that leave zombie
    *  MJPEG connections while the browser tears down the old one. */
-  currentStreamUrl = computed(() =>
-    this.viewMode() === 'single' ? this.singleCameraUrl() : this.fullMosaicUrl()
-  );
+  currentStreamUrl = computed(() => {
+    const mode = this.viewMode();
+    if (mode === 'single') return this.singleCameraUrl();
+    if (mode === 'paged') return this.pagedMosaicUrl();
+    return this.fullMosaicUrl();
+  });
 
   cameraIndices = computed(() => {
     const n = this.showStream()
@@ -302,6 +318,14 @@ export class StreamComponent implements OnInit, OnDestroy {
       const count = this.status()?.sources_count ?? 0;
       this.streamSourcesCount.set(count);
       this.streamRevision.update((v) => v + 1);
+
+      // Auto-paginate when many cameras
+      const totalPages = Math.max(1, Math.ceil(count / this.mosaicPerPage));
+      this.mosaicTotalPages.set(totalPages);
+      if (count > this.mosaicPerPage) {
+        this.mosaicPage.set(1);
+        this.viewMode.set('paged');
+      }
     }
     this.showStream.update((v) => !v);
   }
@@ -316,6 +340,28 @@ export class StreamComponent implements OnInit, OnDestroy {
     // browser to abort the old single-camera connection immediately.
     this.streamRevision.update((v) => v + 1);
     this.viewMode.set('mosaic');
+  }
+
+  goPagedMosaic(page?: number) {
+    clearTimeout(this.singleRetryTimer);
+    if (page !== undefined) this.mosaicPage.set(page);
+    this.streamRevision.update((v) => v + 1);
+    this.viewMode.set('paged');
+  }
+
+  nextMosaicPage() {
+    const total = this.mosaicTotalPages();
+    if (this.mosaicPage() < total) {
+      this.mosaicPage.update((p) => p + 1);
+      this.streamRevision.update((v) => v + 1);
+    }
+  }
+
+  prevMosaicPage() {
+    if (this.mosaicPage() > 1) {
+      this.mosaicPage.update((p) => p - 1);
+      this.streamRevision.update((v) => v + 1);
+    }
   }
 
   goSingle(index: number) {
@@ -360,8 +406,15 @@ export class StreamComponent implements OnInit, OnDestroy {
   onMosaicClick(event: MouseEvent) {
     const img = event.target as HTMLImageElement;
     if (!img) return;
-    const total = this.cameraIndices().length;
-    if (total <= 1) return;
+    const totalAll = this.cameraIndices().length;
+    if (totalAll <= 1) return;
+
+    // In paged mode the visible grid has at most mosaicPerPage cameras
+    const isPaged = this.viewMode() === 'paged';
+    const pageOffset = isPaged ? (this.mosaicPage() - 1) * this.mosaicPerPage : 0;
+    const visibleCount = isPaged
+      ? Math.min(this.mosaicPerPage, totalAll - pageOffset)
+      : totalAll;
 
     const rect = img.getBoundingClientRect();
     const natW = img.naturalWidth || 1;
@@ -376,12 +429,13 @@ export class StreamComponent implements OnInit, OnDestroy {
     const y = event.clientY - rect.top - offsetY;
     if (x < 0 || y < 0 || x > renderedW || y > renderedH) return;
 
-    const [rows, cols] = this._calcGrid(total);
+    const [rows, cols] = this._calcGrid(visibleCount);
     const col = Math.floor((x / renderedW) * cols);
     const row = Math.floor((y / renderedH) * rows);
-    const index = row * cols + col;
-    if (index >= 0 && index < total) {
-      this.goSingle(index);
+    const localIndex = row * cols + col;
+    const globalIndex = pageOffset + localIndex;
+    if (localIndex >= 0 && localIndex < visibleCount && globalIndex < totalAll) {
+      this.goSingle(globalIndex);
     }
   }
 

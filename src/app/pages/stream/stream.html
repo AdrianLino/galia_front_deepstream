@@ -660,6 +660,12 @@
                 [class]="viewMode() === 'mosaic' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-gray-800'">
                 Mosaico Completo
               </button>
+              @if (mosaicTotalPages() > 1) {
+                <button (click)="goPagedMosaic()" class="px-4 py-1.5 text-xs font-bold rounded-md transition-all whitespace-nowrap"
+                  [class]="viewMode() === 'paged' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-gray-800'">
+                  Paginado
+                </button>
+              }
               @if (cameraIndices().length > 1) {
                 <div class="w-px h-4 bg-gray-700 mx-1 flex-shrink-0"></div>
                 @for (i of cameraIndices(); track i) {
@@ -696,13 +702,34 @@
           </button>
         }
 
+        @if (viewMode() === 'paged' && mosaicTotalPages() > 1) {
+          <!-- Page navigation arrows + indicator -->
+          <button (click)="prevMosaicPage()" [disabled]="mosaicPage() <= 1"
+            class="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/40 hover:bg-black/80 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all z-10 backdrop-blur border border-white/10 hover:scale-110 shadow-2xl disabled:opacity-20 disabled:hover:scale-100">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <button (click)="nextMosaicPage()" [disabled]="mosaicPage() >= mosaicTotalPages()"
+            class="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/40 hover:bg-black/80 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all z-10 backdrop-blur border border-white/10 hover:scale-110 shadow-2xl disabled:opacity-20 disabled:hover:scale-100">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+          </button>
+          <!-- Page indicator -->
+          <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-gray-900/80 backdrop-blur rounded-lg px-4 py-2 border border-gray-700/50 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity">
+            @for (p of mosaicPageNumbers(); track p) {
+              <button (click)="goPagedMosaic(p)" class="w-8 h-8 text-xs font-bold rounded-md transition-all"
+                [class]="mosaicPage() === p ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-gray-800'">
+                {{ p }}
+              </button>
+            }
+          </div>
+        }
+
         <!-- Stream Image Container flex-1 to center perfectly -->
         <div class="flex-1 w-full h-full flex items-center justify-center p-2 relative">
           <!-- Single <img> with dynamic src avoids zombie MJPEG connections
                that accumulate when Angular destroys/creates separate elements -->
           <img [src]="currentStreamUrl()"
                (error)="onImgError()"
-               (click)="viewMode() === 'mosaic' ? onMosaicClick($event) : goMosaic()"
+               (click)="viewMode() === 'mosaic' || viewMode() === 'paged' ? onMosaicClick($event) : goMosaic()"
                alt="Stream"
                class="w-full h-full object-contain rounded-lg drop-shadow-[0_0_20px_rgba(0,0,0,0.5)] cursor-pointer" />
         </div>

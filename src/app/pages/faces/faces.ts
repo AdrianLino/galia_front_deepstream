@@ -100,6 +100,8 @@ export class FacesComponent implements OnInit, OnDestroy {
   registerError = signal<string | null>(null);
   batchProgress = signal<number>(0);
   batchTotal = signal<number>(0);
+  batchCurrentFile = signal<string>('');
+  batchResults = signal<{ name: string; ok: boolean; error?: string }[]>([]);
 
   // Identify
   identifyFile: File | null = null;
@@ -376,10 +378,12 @@ export class FacesComponent implements OnInit, OnDestroy {
     // Si son múltiples archivos (Batch upload)
     this.batchTotal.set(this.registerFiles.length);
     this.batchProgress.set(0);
+    this.batchResults.set([]);
+    this.batchCurrentFile.set('');
     
     let successCount = 0;
     let failCount = 0;
-    let lastError = null;
+    const results: { name: string; ok: boolean; error?: string }[] = [];
 
     for (let i = 0; i < this.registerFiles.length; i++) {
         const file = this.registerFiles[i];
@@ -388,32 +392,38 @@ export class FacesComponent implements OnInit, OnDestroy {
         const lastDot = name.lastIndexOf('.');
         if (lastDot > 0) name = name.substring(0, lastDot);
         
+        this.batchCurrentFile.set(name);
+        
         try {
             await lastValueFrom(this.svc.register(name, file, this.registerAlertLevel, this.registerFolderId));
             successCount++;
+            results.push({ name, ok: true });
         } catch (e: any) {
             failCount++;
-            lastError = e?.error?.detail ?? `Error en archivo ${file.name}`;
-            console.error('Error subiendo', file.name, e);
+            const errMsg = e?.error?.detail ?? `Error en archivo ${file.name}`;
+            results.push({ name, ok: false, error: errMsg });
         }
         
         this.batchProgress.set(i + 1);
+        this.batchResults.set([...results]);
     }
     
     this.registerLoading.set(false);
     this.registerFiles = [];
     this.registerAlertLevel = 'normal';
     this.registerFolderId = null;
-    this.batchProgress.set(0);
-    this.batchTotal.set(0);
+    this.batchCurrentFile.set('');
     this.loadPersons();
     
     if (failCount === 0) {
         this.registerMsg.set(`¡Se registraron ${successCount} rostros exitosamente!`);
+        this.batchProgress.set(0);
+        this.batchTotal.set(0);
+        this.batchResults.set([]);
     } else if (successCount > 0) {
-        this.registerError.set(`Registro parcial: ${successCount} exitosos, ${failCount} fallidos. Último error: ${lastError}`);
+        this.registerError.set(`Registro parcial: ${successCount} exitosos, ${failCount} rechazados (ver detalle abajo).`);
     } else {
-        this.registerError.set(`Error al registrar todos los ${failCount} archivos. Último error: ${lastError}`);
+        this.registerError.set(`Todas las ${failCount} fotos fueron rechazadas (ver detalle abajo).`);
     }
   }
 

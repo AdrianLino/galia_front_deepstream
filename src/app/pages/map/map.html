@@ -286,24 +286,49 @@
       <!-- Search -->
       <div class="p-3 border-b border-gray-700 space-y-2">
         <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Buscar persona</p>
-        <div class="flex gap-2">
-          <input [(ngModel)]="searchInput"
-                 (keyup.enter)="searchRoute()"
-                 placeholder="Nombre exacto..."
-                 class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white
-                        placeholder-gray-600 focus:outline-none focus:border-amber-500 transition-colors"/>
-          <button (click)="searchRoute()"
-                  [disabled]="!searchInput.trim() || loadingRoute()"
-                  class="px-3 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 rounded-lg
-                         transition-colors flex items-center justify-center">
-            <svg *ngIf="!loadingRoute()" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
-            <svg *ngIf="loadingRoute()" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-            </svg>
-          </button>
+        <div class="relative">
+          <div class="flex gap-2">
+            <input [(ngModel)]="searchInput"
+                   (keyup.enter)="searchRoute(); showForensicDropdown.set(false)"
+                   (input)="showForensicDropdown.set(true)"
+                   (focus)="showForensicDropdown.set(true)"
+                   placeholder="Buscar persona..."
+                   autocomplete="off"
+                   class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white
+                          placeholder-gray-600 focus:outline-none focus:border-amber-500 transition-colors"/>
+            <button (click)="searchRoute(); showForensicDropdown.set(false)"
+                    [disabled]="!searchInput.trim() || loadingRoute()"
+                    class="px-3 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 rounded-lg
+                           transition-colors flex items-center justify-center">
+              <svg *ngIf="!loadingRoute()" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+              <svg *ngIf="loadingRoute()" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Dropdown list of persons -->
+          <div *ngIf="showForensicDropdown() && filteredForensicPersons().length > 0"
+               class="absolute left-0 right-0 top-full mt-1 z-50 bg-gray-900 border border-gray-700 rounded-lg shadow-xl max-h-52 overflow-y-auto">
+            <button *ngFor="let person of filteredForensicPersons()"
+                    (mousedown)="selectForensicPerson(person)"
+                    class="w-full text-left flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-gray-750 hover:bg-amber-900/30 transition-colors border-b border-gray-800 last:border-0">
+              <img [src]="personPhotoUrl(person)"
+                   class="w-7 h-7 rounded-full object-cover border border-gray-600 flex-shrink-0"
+                   (error)="$any($event.target).src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%236b7280%22><path d=%22M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z%22/></svg>'" />
+              <div class="flex-1 min-w-0">
+                <p class="text-white truncate">{{ person.name }}</p>
+                <p class="text-xs text-gray-500">{{ person.embedding_count }} embedding(s)</p>
+              </div>
+              <span class="w-2 h-2 rounded-full flex-shrink-0"
+                    [class.bg-red-500]="person.alert_level === 'critical'"
+                    [class.bg-amber-500]="person.alert_level === 'watch'"
+                    [class.bg-gray-600]="person.alert_level === 'normal'"></span>
+            </button>
+          </div>
         </div>
 
         <!-- Options -->
