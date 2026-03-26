@@ -29,6 +29,15 @@ export interface FaceHistoryPerson {
   last_seen: string;
 }
 
+export interface FaceSearchResult {
+  match_type: 'known' | 'unknown' | 'none';
+  person_name: string | null;
+  confidence: number;
+  closest_hint?: string | null;
+  items: FaceHistoryItem[];
+  total: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class FaceHistoryService {
   private http = inject(HttpClient);
@@ -51,6 +60,18 @@ export class FaceHistoryService {
 
   persons(): Observable<FaceHistoryPerson[]> {
     return this.http.get<FaceHistoryPerson[]>(`${API}/persons`);
+  }
+
+  searchByFace(imageFile: File, threshold?: number): Observable<FaceSearchResult> {
+    const fd = new FormData();
+    fd.append('image', imageFile);
+    let params = new HttpParams();
+    if (threshold !== undefined) params = params.set('threshold', threshold);
+    return this.http.post<FaceSearchResult>(`${API}/search-by-face`, fd, { params });
+  }
+
+  clearAll(): Observable<{ deleted: number; thumbnails_deleted: number }> {
+    return this.http.delete<{ deleted: number; thumbnails_deleted: number }>(API);
   }
 
   thumbnailUrl(path: string): string {

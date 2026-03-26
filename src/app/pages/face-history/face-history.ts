@@ -5,6 +5,7 @@ import {
   FaceHistoryService,
   FaceHistoryItem,
   FaceHistoryPerson,
+  FaceSearchResult,
 } from '../../core/services/face-history.service';
 
 @Component({
@@ -42,12 +43,40 @@ import {
       <!-- Filters -->
       <div class="flex flex-wrap items-end gap-3 bg-gray-800/50 rounded-lg border border-gray-700/40 p-3">
 
+        <!-- Face search button -->
+        <div class="flex flex-col gap-0.5">
+          <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Buscar por rostro</label>
+          <input #faceInput type="file" accept="image/jpeg,image/png" class="hidden"
+                 (change)="onFaceFileSelected($event)"/>
+          <button (click)="faceInput.click()"
+                  class="px-3 py-1 text-xs font-semibold rounded-lg border transition-colors flex items-center gap-1.5"
+                  [class]="faceSearchMode()
+                    ? 'bg-indigo-600 border-indigo-500 text-white'
+                    : 'bg-gray-900 border-gray-700 text-gray-300 hover:text-white hover:bg-gray-700'"
+                  [disabled]="faceSearching()">
+            @if (faceSearching()) {
+              <div class="w-3.5 h-3.5 border-2 border-gray-400 border-t-white rounded-full animate-spin"></div>
+              Buscando…
+            } @else {
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+              <svg class="w-3.5 h-3.5 -ml-1" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M9 11.75a1.25 1.25 0 100-2.5 1.25 1.25 0 000 2.5zm6 0a1.25 1.25 0 100-2.5 1.25 1.25 0 000 2.5zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8 0-.29.02-.58.05-.86 2.36-1.05 4.23-2.98 5.21-5.37C11.07 8.33 14.05 10 17.42 10c.78 0 1.53-.09 2.25-.26.21.71.33 1.47.33 2.26 0 4.41-3.59 8-8 8z"/>
+              </svg>
+              Subir cara
+            }
+          </button>
+        </div>
+
         <!-- Person dropdown -->
         <div class="flex flex-col gap-0.5">
           <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Persona</label>
           <select [(ngModel)]="filterPerson"
                   (ngModelChange)="applyFilters()"
-                  class="bg-gray-900 border border-gray-700 rounded-lg text-xs text-white px-2 py-1 min-w-[160px] focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                  [disabled]="faceSearchMode() === 'unknown'"
+                  class="bg-gray-900 border border-gray-700 rounded-lg text-xs text-white px-2 py-1 min-w-[160px] focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50">
             <option value="">Todas</option>
             @for (p of persons(); track p.person_name) {
               <option [value]="p.person_name">{{ p.person_name }} ({{ p.count }})</option>
@@ -70,7 +99,7 @@ import {
         </div>
 
         <!-- Clear -->
-        @if (filterPerson || filterFrom || filterTo) {
+        @if (filterPerson || filterFrom || filterTo || faceSearchMode()) {
           <button (click)="clearFilters()"
                   class="px-3 py-1.5 text-xs font-semibold text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg transition-colors">
             Limpiar filtros
@@ -78,12 +107,47 @@ import {
         }
       </div>
 
+      <!-- Face search result banner -->
+      @if (faceSearchMode()) {
+        <div class="rounded-lg border p-3 flex items-center gap-3"
+             [class]="faceSearchMode() === 'known'
+               ? 'bg-green-900/30 border-green-600/40'
+               : 'bg-amber-900/30 border-amber-600/40'">
+          @if (faceSearchPreview()) {
+            <img [src]="faceSearchPreview()" class="w-10 h-10 rounded-lg object-cover border border-gray-600"/>
+          }
+          <div class="flex-1 min-w-0">
+            @if (faceSearchMode() === 'known') {
+              <p class="text-xs font-bold text-green-400">
+                Coincidencia encontrada: {{ faceSearchPersonName() }}
+              </p>
+              <p class="text-[10px] text-green-400/70">
+                Confianza: {{ (faceSearchConfidence() * 100).toFixed(0) }}% — Mostrando registros de esta persona
+              </p>
+            } @else {
+              <p class="text-xs font-bold text-amber-400">
+                Persona no registrada — {{ total() }} apariciones encontradas en desconocidos
+              </p>
+              <p class="text-[10px] text-amber-400/70">
+                Se comparó el rostro contra recortes de personas no identificadas
+              </p>
+            }
+          </div>
+          <button (click)="clearFaceSearch()"
+                  class="px-2.5 py-1 text-xs font-semibold text-gray-300 hover:text-white bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-lg transition-colors">
+            ✕ Quitar
+          </button>
+        </div>
+      }
+
       <!-- Table -->
       <div class="bg-gray-800/40 rounded-lg border border-gray-700/40 overflow-hidden">
         @if (loading()) {
           <div class="py-10 text-center">
             <div class="inline-block w-6 h-6 border-2 border-gray-600 border-t-indigo-400 rounded-full animate-spin"></div>
-            <p class="text-xs text-gray-500 mt-2">Cargando historial…</p>
+            <p class="text-xs text-gray-500 mt-2">
+              {{ faceSearching() ? 'Comparando rostros…' : 'Cargando historial…' }}
+            </p>
           </div>
         } @else if (items().length === 0) {
           <div class="py-10 text-center">
@@ -217,6 +281,14 @@ export class FaceHistoryComponent implements OnInit {
   readonly persons = signal<FaceHistoryPerson[]>([]);
   readonly expandedItem = signal<FaceHistoryItem | null>(null);
 
+  /** Face search state */
+  readonly faceSearching = signal(false);
+  readonly faceSearchMode = signal<'known' | 'unknown' | null>(null);
+  readonly faceSearchPersonName = signal('');
+  readonly faceSearchConfidence = signal(0);
+  readonly faceSearchPreview = signal<string | null>(null);
+  private faceSearchIds: number[] = [];
+
   filterPerson = '';
   filterFrom = '';
   filterTo = '';
@@ -242,16 +314,19 @@ export class FaceHistoryComponent implements OnInit {
   }
 
   reload(): void {
+    if (this.faceSearchMode()) return;
     this.loadPersons();
     this.loadData();
   }
 
   applyFilters(): void {
+    if (this.faceSearchMode() === 'unknown') return;
     this.currentPage.set(1);
     this.loadData();
   }
 
   clearFilters(): void {
+    this.clearFaceSearch();
     this.filterPerson = '';
     this.filterFrom = '';
     this.filterTo = '';
@@ -262,7 +337,12 @@ export class FaceHistoryComponent implements OnInit {
   goPage(page: number): void {
     if (page < 1 || page > this.totalPages()) return;
     this.currentPage.set(page);
-    this.loadData();
+    if (this.faceSearchMode() === 'unknown') {
+      // Paginate locally over the face search results
+      this.paginateUnknownResults();
+    } else {
+      this.loadData();
+    }
   }
 
   formatDate(iso: string): string {
@@ -291,6 +371,85 @@ export class FaceHistoryComponent implements OnInit {
       return item.confidence >= 0.25 ? base : base + ' ?';
     }
     return item.person_name;
+  }
+
+  /** Handle face image selection */
+  onFaceFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    input.value = '';
+
+    // Show preview
+    const reader = new FileReader();
+    reader.onload = () => this.faceSearchPreview.set(reader.result as string);
+    reader.readAsDataURL(file);
+
+    this.faceSearching.set(true);
+    this.loading.set(true);
+    this.svc.searchByFace(file).subscribe({
+      next: (res) => {
+        this.faceSearching.set(false);
+        this.handleFaceSearchResult(res);
+      },
+      error: (err) => {
+        this.faceSearching.set(false);
+        this.loading.set(false);
+        const msg = err.error?.detail || 'Error al buscar por rostro';
+        alert(msg);
+      },
+    });
+  }
+
+  /** Clear face search and return to normal mode */
+  clearFaceSearch(): void {
+    this.faceSearchMode.set(null);
+    this.faceSearchPersonName.set('');
+    this.faceSearchConfidence.set(0);
+    this.faceSearchPreview.set(null);
+    this.faceSearchIds = [];
+    this._allUnknownItems = [];
+  }
+
+  private handleFaceSearchResult(res: FaceSearchResult): void {
+    if (res.match_type === 'known' && res.person_name) {
+      // Known person — auto-filter by name
+      this.faceSearchMode.set('known');
+      this.faceSearchPersonName.set(res.person_name);
+      this.faceSearchConfidence.set(res.confidence);
+      this.filterPerson = res.person_name;
+      this.currentPage.set(1);
+      this.loadData();
+    } else if (res.match_type === 'unknown' && res.items.length > 0) {
+      // Unknown person — show matching records directly
+      this.faceSearchMode.set('unknown');
+      this.faceSearchConfidence.set(0);
+      this._allUnknownItems = res.items;
+      this.total.set(res.total);
+      this.currentPage.set(1);
+      this.paginateUnknownResults();
+      this.loading.set(false);
+    } else {
+      // No match
+      this.loading.set(false);
+      this.faceSearchMode.set(null);
+      this.faceSearchPreview.set(null);
+      const hint = (res as any).closest_hint;
+      if (hint) {
+        alert(`No se encontró coincidencia.\nLa persona más parecida registrada es: ${hint} (${(res.confidence * 100).toFixed(0)}%)`);
+      } else {
+        alert('No se encontró coincidencia con ningún rostro en el historial.');
+      }
+    }
+  }
+
+  /** All unknown items from face search (for client-side pagination) */
+  private _allUnknownItems: FaceHistoryItem[] = [];
+
+  private paginateUnknownResults(): void {
+    const start = this.offset();
+    const end = start + this.pageSize;
+    this.items.set(this._allUnknownItems.slice(start, end));
   }
 
   private loadData(): void {

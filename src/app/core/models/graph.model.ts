@@ -1,13 +1,17 @@
 // Models for the Graph Query Microservice (port 8003)
 
+export type SessionTier = 'green' | 'yellow' | 'red';
+
 export interface ActiveSession {
   persona: string;
   camara: string;
   rtsp_url: string;
   track_id: number;
   inicio: number;       // Unix timestamp
+  confianza: number;
   duracion_s: number;
   enrollado: boolean;
+  tier?: SessionTier;
 }
 
 export interface RouteEntry {
@@ -18,6 +22,7 @@ export interface RouteEntry {
   confianza: number;
   duracion_s: number | null;
   enrollado: boolean;
+  tier?: SessionTier;
 }
 
 export interface Cooccurrence {
@@ -48,6 +53,7 @@ export interface TrackingCamera {
   fin?: number | null;
   duracion_s: number | null;
   confianza: number;
+  tier?: SessionTier;
 }
 
 export interface TrackingResult {

@@ -16,7 +16,7 @@ import { GraphQueryService } from '../../core/services/graph-query.service';
 import { StreamService } from '../../core/services/stream.service';
 import { FacesService } from '../../core/services/faces.service';
 import { RtspSource } from '../../core/models/stream.model';
-import { ActiveSession, Cooccurrence, RouteEntry, RouteEntryWithAnomaly, TrackingResult } from '../../core/models/graph.model';
+import { ActiveSession, Cooccurrence, RouteEntry, RouteEntryWithAnomaly, SessionTier, TrackingResult } from '../../core/models/graph.model';
 import { Person } from '../../core/models/face.model';
 
 type MapMode = 'live' | 'forensic' | 'tracking';
@@ -142,6 +142,18 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   interiorActiveCameraNames = computed(() =>
     new Set(this.activeSessions().map(s => s.camara))
   );
+  interiorCameraTier = computed(() => {
+    const tierRank: Record<string, number> = { green: 2, yellow: 1, red: 0 };
+    const map = new Map<string, string>();
+    for (const s of this.activeSessions()) {
+      const t = s.tier ?? (s.enrollado ? 'green' : 'red');
+      const prev = map.get(s.camara);
+      if (!prev || (tierRank[t] ?? 0) > (tierRank[prev] ?? 0)) {
+        map.set(s.camara, t);
+      }
+    }
+    return map;
+  });
   interiorRouteWithCoords = computed(() => {
     const base = this.anomalies().length > 0
       ? this.anomalies()
@@ -157,10 +169,13 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     this.interiorRouteWithCoords().map(e => `${e._x},${e._y}`).join(' ')
   );
   activeEnrolled = computed(() =>
-    this.activeSessions().filter(s => s.enrollado)
+    this.activeSessions().filter(s => s.tier === 'green')
+  );
+  activeYellow = computed(() =>
+    this.activeSessions().filter(s => s.tier === 'yellow')
   );
   activeUnknown = computed(() =>
-    this.activeSessions().filter(s => !s.enrollado)
+    this.activeSessions().filter(s => !s.tier || s.tier === 'red')
   );
   livePersonNames = computed(() =>
     new Set(this.activeSessions().filter(s => s.enrollado).map(s => s.persona))
@@ -411,23 +426,39 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     this.clearSessionLayers();
     this.resetMarkerColors();
 
-    // Build a set of camera names that are currently active
-    const activeNames = new Set(sessions.map(s => s.camara));
+    // Build a map of camera name → best tier (green > yellow > red)
+    const tierRank: Record<string, number> = { green: 2, yellow: 1, red: 0 };
+    const camBestTier = new Map<string, SessionTier>();
+    for (const s of sessions) {
+      const t = s.tier ?? (s.enrollado ? 'green' : 'red');
+      const prev = camBestTier.get(s.camara);
+      if (!prev || (tierRank[t] ?? 0) > (tierRank[prev] ?? 0)) {
+        camBestTier.set(s.camara, t);
+      }
+    }
+
+    const tierColors: Record<SessionTier, { fill: string; stroke: string; bg: string }> = {
+      green:  { fill: '#22c55e', stroke: '#15803d', bg: 'rgba(34,197,94,0.9)' },
+      yellow: { fill: '#f59e0b', stroke: '#d97706', bg: 'rgba(245,158,11,0.88)' },
+      red:    { fill: '#ef4444', stroke: '#dc2626', bg: 'rgba(239,68,68,0.88)' },
+    };
 
     for (const cam of this.camerasWithCoords()) {
-      if (!activeNames.has(cam.name)) continue;
+      const tier = camBestTier.get(cam.name);
+      if (!tier) continue;
 
       const marker = this.cameraMarkers.get(cam.id);
       if (!marker) continue;
+      const colors = tierColors[tier];
 
-      // Highlight active camera
-      marker.setStyle({ fillColor: '#22c55e', color: '#15803d' });
+      // Highlight active camera with tier color
+      marker.setStyle({ fillColor: colors.fill, color: colors.stroke });
 
       // Outer pulse ring
       const pulse = L.circleMarker([cam.latitud!, cam.longitud!], {
         radius: 20,
-        fillColor: '#22c55e',
-        color: '#22c55e',
+        fillColor: colors.fill,
+        color: colors.fill,
         weight: 1,
         fillOpacity: 0.12,
       }).addTo(this.map!);
@@ -436,12 +467,17 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       // Person label(s) on this camera
       const here = sessions.filter(s => s.camara === cam.name);
       const label = here
-        .map(s => s.enrollado ? s.persona : '?')
+        .map(s => {
+          const t = s.tier ?? (s.enrollado ? 'green' : 'red');
+          if (t === 'green') return s.persona;
+          if (t === 'yellow') return `~${s.persona.replace(/^~/, '')}`;
+          return '?';
+        })
         .slice(0, 3)
         .join(', ');
       if (label) {
         const icon = L.divIcon({
-          html: `<div style="background:rgba(34,197,94,0.9);color:#000;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:700;white-space:nowrap">${label}</div>`,
+          html: `<div style="background:${colors.bg};color:#000;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:700;white-space:nowrap">${label}</div>`,
           className: '',
           iconAnchor: [0, 28],
         });
@@ -518,34 +554,47 @@ export class MapComponent implements AfterViewInit, OnDestroy {
 
     const coords: [number, number][] = [];
 
+    const tierBg: Record<string, string> = {
+      green: '#22c55e', yellow: '#f59e0b', red: '#ef4444',
+    };
+    const tierBorder: Record<string, string> = {
+      green: '#15803d', yellow: '#92400e', red: '#991b1b',
+    };
+
     entries.forEach((entry, idx) => {
       const cam = this.cameras().find(c => c.name === entry.camara);
       if (!cam || cam.latitud == null || cam.longitud == null) return;
 
       coords.push([cam.latitud, cam.longitud]);
 
+      const tier = entry.tier ?? (entry.enrollado ? 'green' : 'red');
+      const bg = tierBg[tier] ?? '#f59e0b';
+      const border = tierBorder[tier] ?? '#92400e';
+
       // Highlight camera on map
       this.cameraMarkers.get(cam.id)?.setStyle({
-        fillColor: '#f59e0b',
-        color: '#d97706',
+        fillColor: bg,
+        color: border,
       });
 
-      // Numbered marker
+      // Numbered marker with tier color
       const numIcon = L.divIcon({
-        html: `<div style="background:#f59e0b;color:#000;border-radius:50%;width:22px;height:22px;
+        html: `<div style="background:${bg};color:#000;border-radius:50%;width:22px;height:22px;
                display:flex;align-items:center;justify-content:center;font-weight:800;
-               font-size:11px;border:2px solid #92400e;box-shadow:0 2px 4px rgba(0,0,0,.5)">${idx + 1}</div>`,
+               font-size:11px;border:2px solid ${border};box-shadow:0 2px 4px rgba(0,0,0,.5)">${idx + 1}</div>`,
         className: '',
         iconSize: [22, 22],
         iconAnchor: [11, 11],
       });
 
+      const tierLabel = tier === 'green' ? 'Identificado' : tier === 'yellow' ? 'Sospecha' : 'Desconocido';
       const m = L.marker([cam.latitud, cam.longitud], { icon: numIcon })
         .bindPopup(
           `<b>${idx + 1}. ${cam.name}</b><br/>
            <span style="font-size:11px">
              ${this.formatTs(entry.inicio)}<br/>
              Confianza: ${(entry.confianza * 100).toFixed(0)}%<br/>
+             Nivel: <span style="color:${bg};font-weight:700">${tierLabel}</span><br/>
              Duración: ${this.formatDuration(entry.duracion_s)}
            </span>`
         )
@@ -646,18 +695,26 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     this.clearSessionLayers();
     this.resetMarkerColors();
 
-    // 1) Render LIVE cameras (green — person is here right now)
+    const tierColors: Record<SessionTier, { fill: string; stroke: string; bg: string }> = {
+      green:  { fill: '#22c55e', stroke: '#15803d', bg: 'rgba(34,197,94,0.92)' },
+      yellow: { fill: '#f59e0b', stroke: '#d97706', bg: 'rgba(245,158,11,0.88)' },
+      red:    { fill: '#ef4444', stroke: '#dc2626', bg: 'rgba(239,68,68,0.88)' },
+    };
+
+    // 1) Render LIVE cameras with tier-based colors
     for (const entry of result.live) {
       const cam = this.cameras().find(c => c.name === entry.camara);
       if (!cam || cam.latitud == null || cam.longitud == null) continue;
+      const tier: SessionTier = entry.tier ?? 'green';
+      const colors = tierColors[tier];
       const marker = this.cameraMarkers.get(cam.id);
-      if (marker) marker.setStyle({ fillColor: '#22c55e', color: '#15803d' });
+      if (marker) marker.setStyle({ fillColor: colors.fill, color: colors.stroke });
 
       // Pulse
       const pulse = L.circleMarker([cam.latitud, cam.longitud], {
         radius: 22,
-        fillColor: '#22c55e',
-        color: '#22c55e',
+        fillColor: colors.fill,
+        color: colors.fill,
         weight: 1,
         fillOpacity: 0.15,
       }).addTo(this.map!);
@@ -666,7 +723,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       // Label
       const conf = entry.confianza != null ? ` ${(entry.confianza * 100).toFixed(0)}%` : '';
       const icon = L.divIcon({
-        html: `<div style="background:rgba(34,197,94,0.92);color:#000;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700;white-space:nowrap">EN VIVO${conf}</div>`,
+        html: `<div style="background:${colors.bg};color:#000;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700;white-space:nowrap">EN VIVO${conf}</div>`,
         className: '',
         iconAnchor: [0, 30],
       });
@@ -674,16 +731,18 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       this.sessionLayers.push(lbl);
     }
 
-    // 2) Render RECENT cameras (amber — last seen, sorted by confidence)
+    // 2) Render RECENT cameras with tier-based colors
     for (const entry of result.recent) {
       const cam = this.cameras().find(c => c.name === entry.camara);
       if (!cam || cam.latitud == null || cam.longitud == null) continue;
+      const tier: SessionTier = entry.tier ?? 'yellow';
+      const colors = tierColors[tier];
       const marker = this.cameraMarkers.get(cam.id);
-      if (marker) marker.setStyle({ fillColor: '#f59e0b', color: '#d97706' });
+      if (marker) marker.setStyle({ fillColor: colors.fill, color: colors.stroke });
 
       const conf = entry.confianza != null ? `${(entry.confianza * 100).toFixed(0)}%` : '';
       const icon = L.divIcon({
-        html: `<div style="background:rgba(245,158,11,0.88);color:#000;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700;white-space:nowrap">${conf} · ${this.formatTs(entry.fin ?? entry.inicio)}</div>`,
+        html: `<div style="background:${colors.bg};color:#000;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700;white-space:nowrap">${conf} · ${this.formatTs(entry.fin ?? entry.inicio)}</div>`,
         className: '',
         iconAnchor: [0, 30],
       });

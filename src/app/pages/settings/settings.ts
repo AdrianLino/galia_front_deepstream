@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BackupService, BackupSection } from '../../core/services/backup.service';
+import { FaceHistoryService } from '../../core/services/face-history.service';
 
 interface SectionInfo {
   key: BackupSection;
@@ -162,6 +163,65 @@ interface SectionInfo {
           }
         </div>
 
+        <!-- ═══ DANGER ZONE ═══ -->
+        <h2 class="text-sm font-bold mt-6 mb-3 flex items-center gap-1.5 text-red-400">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+          </svg>
+          Zona de peligro
+        </h2>
+
+        <div class="bg-gray-900 border border-red-500/30 rounded-lg p-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-lg bg-red-500/15 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-xs font-bold text-white">Borrar historial de rostros</h3>
+                <p class="text-xs text-gray-400 mt-0.5">Elimina todos los registros de detecciones faciales y sus miniaturas. Esta acción no se puede deshacer.</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0 ml-4">
+              @if (!confirmClearHistory()) {
+                <button (click)="confirmClearHistory.set(true)"
+                        [disabled]="clearingHistory()"
+                        class="px-4 py-2 text-xs font-semibold rounded-lg border border-red-500/40 text-red-400 hover:bg-red-500/15 transition-colors disabled:opacity-50">
+                  Borrar todo
+                </button>
+              } @else {
+                <span class="text-xs text-red-400 font-medium">¿Estás seguro?</span>
+                <button (click)="doClearHistory()"
+                        [disabled]="clearingHistory()"
+                        class="px-4 py-2 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-500 text-white transition-colors disabled:opacity-50 flex items-center gap-1.5">
+                  @if (clearingHistory()) {
+                    <div class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Borrando…
+                  } @else {
+                    Sí, borrar
+                  }
+                </button>
+                <button (click)="confirmClearHistory.set(false)"
+                        class="px-3 py-2 text-xs font-semibold rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700 transition-colors">
+                  Cancelar
+                </button>
+              }
+            </div>
+          </div>
+          @if (clearHistoryMsg()) {
+            <div class="mt-3 px-3 py-1.5 rounded-lg text-xs font-medium"
+                 [class]="clearHistoryOk()
+                   ? 'bg-green-500/10 text-green-400 border border-green-500/30'
+                   : 'bg-red-500/10 text-red-400 border border-red-500/30'">
+              {{ clearHistoryMsg() }}
+            </div>
+          }
+        </div>
+
         <!-- File structure legend -->
         <div class="mt-4 bg-gray-900/50 border border-gray-800 rounded-lg p-3">
           <h3 class="text-xs font-bold text-gray-300 mb-2">Estructura del archivo exportado</h3>
@@ -186,6 +246,7 @@ interface SectionInfo {
 })
 export class SettingsComponent {
   private backupSvc = inject(BackupService);
+  private faceHistorySvc = inject(FaceHistoryService);
 
   sections: SectionInfo[] = [
     { key: 'personas',   label: 'Personas / Caras',     desc: 'Perfiles, fotos de rostro y embeddings faciales',   icon: '👤', color: '#a855f7' },
@@ -203,6 +264,11 @@ export class SettingsComponent {
   sectionImporting = signal<BackupSection | null>(null);
   sectionStatus = signal<Record<string, string>>({});
   sectionStatusOk = signal<Record<string, boolean>>({});
+
+  confirmClearHistory = signal(false);
+  clearingHistory = signal(false);
+  clearHistoryMsg = signal<string | null>(null);
+  clearHistoryOk = signal(true);
 
   private pendingSection: BackupSection | null = null;
 
@@ -291,6 +357,25 @@ export class SettingsComponent {
       error: (err) => {
         this.sectionImporting.set(null);
         this.setSectionStatus(section, '✗ Error: ' + (err.error?.detail || err.message), false);
+      },
+    });
+  }
+
+  doClearHistory(): void {
+    this.clearingHistory.set(true);
+    this.clearHistoryMsg.set(null);
+    this.faceHistorySvc.clearAll().subscribe({
+      next: (res) => {
+        this.clearingHistory.set(false);
+        this.confirmClearHistory.set(false);
+        this.clearHistoryMsg.set(`✓ ${res.deleted} registros y ${res.thumbnails_deleted} miniaturas eliminados`);
+        this.clearHistoryOk.set(true);
+      },
+      error: (err) => {
+        this.clearingHistory.set(false);
+        this.confirmClearHistory.set(false);
+        this.clearHistoryMsg.set('✗ Error: ' + (err.error?.detail || err.message));
+        this.clearHistoryOk.set(false);
       },
     });
   }
