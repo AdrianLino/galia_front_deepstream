@@ -714,29 +714,87 @@
                class="w-full h-full object-contain rounded cursor-pointer transition-opacity duration-700" />
         </div>
       } @else if (loading() || streamConnecting()) {
-        <!-- LOTTIE LOADING LAYOUT -->
-        <div class="flex-1 w-full h-full flex flex-col items-center justify-center bg-gray-900/90 relative z-20 overflow-hidden">
-          <div class="w-72 h-72 mb-6 pointer-events-none">
-            <lottie-player 
-              src="src/animation/World.json" 
-              background="transparent" 
-              speed="1" 
-              loop 
-              autoplay>
-            </lottie-player>
-          </div>
-          <h3 class="text-2xl font-bold text-white mb-4 tracking-wide animate-pulse">
-            {{ loading() ? 'Inicializando DeepStream...' : 'Conectando cámaras...' }}
-          </h3>
-          
-          <!-- Progress Bar Layout Here -->
-          <div class="w-80 bg-gray-800 h-3 rounded-full overflow-hidden mt-2 p-0.5 border border-gray-700/50 shadow-inner">
-            <div class="bg-gradient-to-r from-blue-600 to-indigo-500 h-full rounded-full transition-all duration-300 ease-out relative overflow-hidden" 
-                 [style.width.%]="loadingProgress()">
-              <div class="absolute inset-0 bg-white/20 w-full animate-shimmer"></div>
+        <!-- ══════════ LOADING EXPERIENCE ══════════ -->
+        <div class="flex-1 w-full h-full flex flex-col items-center justify-center relative z-20 overflow-hidden bg-[#0a0e1a]">
+          <!-- Fondo animado sutil -->
+          <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.08)_0%,transparent_70%)]"></div>
+          <div class="absolute inset-0 opacity-[0.03]" style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;60&quot; height=&quot;60&quot; viewBox=&quot;0 0 60 60&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cg fill=&quot;none&quot; fill-rule=&quot;evenodd&quot;%3E%3Cg fill=&quot;%239C92AC&quot; fill-opacity=&quot;0.4&quot;%3E%3Cpath d=&quot;M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z&quot;/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
+
+          <!-- Contenido principal -->
+          <div class="relative z-10 flex flex-col items-center max-w-md w-full px-6">
+
+            <!-- Lottie CCTV Camera animación -->
+            <div class="w-52 h-52 mb-2 pointer-events-none drop-shadow-[0_0_40px_rgba(59,130,246,0.2)]">
+              <lottie-player 
+                src="src/animation/CCTV Camera.json" 
+                background="transparent" 
+                speed="1" 
+                loop 
+                autoplay
+                style="width: 100%; height: 100%;">
+              </lottie-player>
             </div>
+
+            <!-- Título dinámico según fase -->
+            <div class="text-center mb-6">
+              <h3 class="text-xl font-bold text-white tracking-tight mb-1">
+                {{ loadingPhases[loadingPhase()].label }}
+              </h3>
+              <p class="text-gray-500 text-xs">Preparando tu sistema de vigilancia inteligente</p>
+            </div>
+
+            <!-- Barra de progreso + porcentaje -->
+            <div class="w-full mb-5">
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[11px] text-gray-400 font-medium tracking-wider uppercase">Progreso</span>
+                <span class="text-[11px] text-blue-400 font-bold tabular-nums">{{ loadingProgress() | number:'1.0-0' }}%</span>
+              </div>
+              <div class="w-full h-2 bg-gray-800/80 rounded-full overflow-hidden border border-gray-700/40">
+                <div class="h-full rounded-full transition-all duration-300 ease-out relative overflow-hidden" 
+                     [class]="loadingPhase() === 3 ? 'bg-gradient-to-r from-emerald-500 to-green-400' : 'bg-gradient-to-r from-blue-600 via-indigo-500 to-blue-400'"
+                     [style.width.%]="loadingProgress()">
+                  <div class="absolute inset-0 bg-white/20 w-full animate-shimmer"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Stepper de fases -->
+            <div class="w-full flex items-center justify-between mb-6 px-1">
+              @for (phase of loadingPhases; track $index) {
+                <div class="flex flex-col items-center gap-1 flex-1">
+                  <div class="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold transition-all duration-500 border"
+                       [class]="$index < loadingPhase() ? 'bg-blue-600 border-blue-500 text-white scale-100' : $index === loadingPhase() ? 'bg-blue-600/20 border-blue-500 text-blue-400 scale-110 ring-2 ring-blue-500/30' : 'bg-gray-800/60 border-gray-700 text-gray-600 scale-90'">
+                    @if ($index < loadingPhase()) {
+                      <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                    } @else {
+                      {{ $index + 1 }}
+                    }
+                  </div>
+                  <span class="text-[9px] font-medium text-center leading-tight transition-colors duration-300"
+                        [class]="$index <= loadingPhase() ? 'text-gray-300' : 'text-gray-600'">
+                    {{ phase.label }}
+                  </span>
+                </div>
+                @if ($index < loadingPhases.length - 1) {
+                  <div class="flex-1 h-px mx-1 mb-5 transition-colors duration-500"
+                       [class]="$index < loadingPhase() ? 'bg-blue-600' : 'bg-gray-800'">
+                  </div>
+                }
+              }
+            </div>
+
+            <!-- Tip rotativo con icono -->
+            <div class="w-full bg-gray-800/40 backdrop-blur-sm rounded-xl border border-gray-700/30 p-3 flex items-start gap-2.5">
+              <div class="w-7 h-7 rounded-lg bg-blue-600/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg class="w-3.5 h-3.5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+              <div>
+                <p class="text-[10px] text-blue-400/80 font-bold uppercase tracking-wider mb-0.5">¿Sabías que?</p>
+                <p class="text-xs text-gray-400 leading-relaxed">{{ loadingTip() }}</p>
+              </div>
+            </div>
+
           </div>
-          <p class="text-gray-400 text-sm mt-3">{{ loadingProgress() | number:'1.0-0' }}%</p>
         </div>
       } @else {
         <!-- Idle State -->

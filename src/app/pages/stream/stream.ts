@@ -78,7 +78,28 @@ export class StreamComponent implements OnInit, OnDestroy {
   status = signal<StreamStatusResponse | null>(null);
   loading = signal(false);
   loadingProgress = signal(0);
+  loadingPhase = signal(0); // 0=preparando, 1=motores, 2=conectando, 3=listo
+  loadingTip = signal('');
   private progressInterval?: ReturnType<typeof setInterval>;
+  private tipInterval?: ReturnType<typeof setInterval>;
+
+  readonly loadingPhases = [
+    { label: 'Preparando pipeline' },
+    { label: 'Cargando motores IA' },
+    { label: 'Conectando cámaras' },
+    { label: 'Listo' },
+  ];
+
+  private readonly tips = [
+    'El motor TensorRT optimiza la inferencia para tu GPU',
+    'Puedes seleccionar cámaras individuales después de iniciar',
+    'El modo paginado se activa con más de 16 cámaras',
+    'Face Recognition detecta rostros en tiempo real',
+    'Usa pantalla completa para mejor visibilidad',
+    'El panel lateral se puede ocultar para más espacio',
+    'Los modelos se cargan una sola vez en memoria GPU',
+    'Puedes cambiar entre vista mosaico y cámara individual',
+  ];
   message = signal<string | null>(null);
   showStream = signal(false);
   streamConnecting = signal(false);
@@ -277,6 +298,7 @@ export class StreamComponent implements OnInit, OnDestroy {
     if (this.progressInterval) {
       clearInterval(this.progressInterval);
     }
+    this.stopLoadingTips();
   }
 
   // ── Pipeline methods ──────────────────────────────────────────────────────
@@ -322,14 +344,24 @@ export class StreamComponent implements OnInit, OnDestroy {
     this.showStream.set(false);
     this.streamConnecting.set(false);
     this.loadingProgress.set(0);
+    this.loadingPhase.set(0);
+    this.startLoadingTips();
 
-    // Heurística de carga: ~3s de motores TRT + 1s por cámara seleccionada
-    const estimatedLoadTimeMs = 3000 + (selected.length * 1000); 
-    const updateIntervalMs = 100;
-    const progressStep = 100 / (estimatedLoadTimeMs / updateIntervalMs);
+    // Progreso no-lineal: rápido al inicio, lento al medio, se detiene en 88%
+    const camCount = Math.max(selected.length, 1);
+    let elapsed = 0;
+    const updateIntervalMs = 150;
 
     this.progressInterval = setInterval(() => {
-      this.loadingProgress.update(p => Math.min(p + progressStep, 90));
+      elapsed += updateIntervalMs;
+      // Curva logarítmica: rápido al inicio, desacelera gradualmente
+      const rawProgress = 88 * (1 - Math.exp(-elapsed / (2500 + camCount * 800)));
+      this.loadingProgress.set(Math.min(rawProgress, 88));
+
+      // Cambiar fase según progreso
+      if (rawProgress < 20) this.loadingPhase.set(0);
+      else if (rawProgress < 55) this.loadingPhase.set(1);
+      else this.loadingPhase.set(2);
     }, updateIntervalMs);
 
     this.streamService
@@ -340,7 +372,8 @@ export class StreamComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (res) => {
           clearInterval(this.progressInterval);
-          this.loadingProgress.set(95);
+          this.loadingProgress.set(92);
+          this.loadingPhase.set(2);
 
           this.message.set(res.message);
           this.loading.set(false);
@@ -353,22 +386,50 @@ export class StreamComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           clearInterval(this.progressInterval);
+          this.stopLoadingTips();
           this.loadingProgress.set(0);
+          this.loadingPhase.set(0);
           this.message.set(err?.error?.detail ?? 'Error al iniciar pipeline.');
           this.loading.set(false);
         },
       });
   }
 
+  private startLoadingTips(): void {
+    this.loadingTip.set(this.tips[Math.floor(Math.random() * this.tips.length)]);
+    this.tipInterval = setInterval(() => {
+      this.loadingTip.set(this.tips[Math.floor(Math.random() * this.tips.length)]);
+    }, 4000);
+  }
+
+  private stopLoadingTips(): void {
+    if (this.tipInterval) {
+      clearInterval(this.tipInterval);
+      this.tipInterval = undefined;
+    }
+  }
+
   private waitForMjpeg(): void {
     this.streamConnecting.set(true);
-    this.loadingProgress.set(100);
+    this.loadingPhase.set(3);
+
+    // Animar el progreso de 92 → 100 suavemente
+    const finishStart = this.loadingProgress();
+    const remaining = 100 - finishStart;
+    let step = 0;
+    const finishInterval = setInterval(() => {
+      step++;
+      const p = finishStart + remaining * (step / 8);
+      this.loadingProgress.set(Math.min(p, 100));
+      if (step >= 8) clearInterval(finishInterval);
+    }, 120);
 
     setTimeout(() => {
+      this.stopLoadingTips();
       this.streamConnecting.set(false);
       this.streamRevision.update((v) => v + 1);
       this.showStream.set(true);
-    }, 1000);
+    }, 1200);
   }
 
   stop() {
