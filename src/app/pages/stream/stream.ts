@@ -7,9 +7,11 @@ import {
   OnDestroy,
   ElementRef,
   ViewChild,
+  CUSTOM_ELEMENTS_SCHEMA
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import '@lottiefiles/lottie-player';
 import * as L from 'leaflet';
 import { StreamService } from '../../core/services/stream.service';
 import { AlertService } from '../../core/services/alert.service';
@@ -28,11 +30,26 @@ type HeightPreset = 'basement' | 'ceiling' | 'wall-high' | 'wall-mid' | 'turnsti
   selector: 'app-stream',
   imports: [CommonModule, FormsModule, FaceSidebarComponent],
   templateUrl: './stream.html',
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   styles: [`
     .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: scale(0.95); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    .animate-zoom-fade {
+      animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .animate-shimmer {
+      animation: shimmer 2s infinite;
+    }
   `]
 })
 export class StreamComponent implements OnInit, OnDestroy {
@@ -60,6 +77,8 @@ export class StreamComponent implements OnInit, OnDestroy {
   // ── Pipeline state ────────────────────────────────────────────────────────
   status = signal<StreamStatusResponse | null>(null);
   loading = signal(false);
+  loadingProgress = signal(0);
+  private progressInterval?: ReturnType<typeof setInterval>;
   message = signal<string | null>(null);
   showStream = signal(false);
   streamConnecting = signal(false);
@@ -255,6 +274,9 @@ export class StreamComponent implements OnInit, OnDestroy {
     this.largeMapMarker = undefined;
     clearTimeout(this.singleRetryTimer);
     clearTimeout(this.switchDebounceTimer);
+    if (this.progressInterval) {
+      clearInterval(this.progressInterval);
+    }
   }
 
   // ── Pipeline methods ──────────────────────────────────────────────────────
@@ -299,6 +321,16 @@ export class StreamComponent implements OnInit, OnDestroy {
     this.message.set(null);
     this.showStream.set(false);
     this.streamConnecting.set(false);
+    this.loadingProgress.set(0);
+
+    // Heurística de carga: ~3s de motores TRT + 1s por cámara seleccionada
+    const estimatedLoadTimeMs = 3000 + (selected.length * 1000); 
+    const updateIntervalMs = 100;
+    const progressStep = 100 / (estimatedLoadTimeMs / updateIntervalMs);
+
+    this.progressInterval = setInterval(() => {
+      this.loadingProgress.update(p => Math.min(p + progressStep, 90));
+    }, updateIntervalMs);
 
     this.streamService
       .start({
@@ -307,15 +339,21 @@ export class StreamComponent implements OnInit, OnDestroy {
       })
       .subscribe({
         next: (res) => {
+          clearInterval(this.progressInterval);
+          this.loadingProgress.set(95);
+
           this.message.set(res.message);
           this.loading.set(false);
           this.refreshStatus();
           if (res.success && this.outputMode === 'mjpeg') {
             this.streamSourcesCount.set(res.sources_count);
+            this.sidebarCollapsed.set(true); // Ocultar sidebar para ver cámaras completas
             this.waitForMjpeg();
           }
         },
         error: (err) => {
+          clearInterval(this.progressInterval);
+          this.loadingProgress.set(0);
           this.message.set(err?.error?.detail ?? 'Error al iniciar pipeline.');
           this.loading.set(false);
         },
@@ -324,6 +362,8 @@ export class StreamComponent implements OnInit, OnDestroy {
 
   private waitForMjpeg(): void {
     this.streamConnecting.set(true);
+    this.loadingProgress.set(100);
+
     setTimeout(() => {
       this.streamConnecting.set(false);
       this.streamRevision.update((v) => v + 1);

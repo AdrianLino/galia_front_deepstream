@@ -706,12 +706,37 @@
         }
 
         <!-- Stream Image Container -->
-        <div class="flex-1 w-full h-full flex items-center justify-center p-1 relative">
+        <div class="flex-1 w-full h-full flex items-center justify-center p-1 relative animate-zoom-fade">
           <img [src]="currentStreamUrl()"
                (error)="onImgError()"
                (click)="viewMode() === 'mosaic' || viewMode() === 'paged' ? onMosaicClick($event) : goMosaic()"
                alt="Stream"
-               class="w-full h-full object-contain rounded cursor-pointer" />
+               class="w-full h-full object-contain rounded cursor-pointer transition-opacity duration-700" />
+        </div>
+      } @else if (loading() || streamConnecting()) {
+        <!-- LOTTIE LOADING LAYOUT -->
+        <div class="flex-1 w-full h-full flex flex-col items-center justify-center bg-gray-900/90 relative z-20 overflow-hidden">
+          <div class="w-72 h-72 mb-6 pointer-events-none">
+            <lottie-player 
+              src="src/animation/World.json" 
+              background="transparent" 
+              speed="1" 
+              loop 
+              autoplay>
+            </lottie-player>
+          </div>
+          <h3 class="text-2xl font-bold text-white mb-4 tracking-wide animate-pulse">
+            {{ loading() ? 'Inicializando DeepStream...' : 'Conectando cámaras...' }}
+          </h3>
+          
+          <!-- Progress Bar Layout Here -->
+          <div class="w-80 bg-gray-800 h-3 rounded-full overflow-hidden mt-2 p-0.5 border border-gray-700/50 shadow-inner">
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-500 h-full rounded-full transition-all duration-300 ease-out relative overflow-hidden" 
+                 [style.width.%]="loadingProgress()">
+              <div class="absolute inset-0 bg-white/20 w-full animate-shimmer"></div>
+            </div>
+          </div>
+          <p class="text-gray-400 text-sm mt-3">{{ loadingProgress() | number:'1.0-0' }}%</p>
         </div>
       } @else {
         <!-- Idle State -->
