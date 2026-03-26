@@ -126,8 +126,8 @@ import {
                   <!-- Name -->
                   <td class="px-3 py-1.5">
                     <span class="font-bold"
-                          [class]="item.person_name === 'Desconocido' ? 'text-red-400' : item.person_name.startsWith('~') ? 'text-yellow-400' : 'text-white'">
-                      {{ item.person_name.startsWith('~') ? item.person_name.substring(1) + ' ?' : item.person_name }}
+                          [class]="item.person_name === 'Desconocido' ? 'text-red-400' : isUncertain(item) ? 'text-yellow-400' : 'text-green-400'">
+                      {{ displayName(item) }}
                     </span>
                   </td>
                   <!-- Confidence -->
@@ -187,7 +187,10 @@ import {
                  class="rounded-xl shadow-2xl max-h-[70vh] w-auto"/>
           }
           <div class="absolute bottom-0 left-0 right-0 bg-black/70 backdrop-blur rounded-b-xl px-4 py-2 flex items-center justify-between">
-            <span class="text-sm font-bold text-white">{{ expandedItem()!.person_name }}</span>
+            <span class="text-sm font-bold"
+                  [class]="expandedItem()!.person_name === 'Desconocido' ? 'text-red-400' : isUncertain(expandedItem()!) ? 'text-yellow-400' : 'text-green-400'">
+              {{ displayName(expandedItem()!) }}
+            </span>
             <span class="text-xs text-gray-300">{{ (expandedItem()!.confidence * 100).toFixed(0) }}% · {{ expandedItem()!.camera_name }}</span>
           </div>
           <button (click)="expandedItem.set(null)"
@@ -275,6 +278,19 @@ export class FaceHistoryComponent implements OnInit {
     } catch {
       return iso;
     }
+  }
+
+  /** ~name with confidence >= 25% counts as identified */
+  isUncertain(item: FaceHistoryItem): boolean {
+    return item.person_name.startsWith('~') && item.confidence < 0.25;
+  }
+
+  displayName(item: FaceHistoryItem): string {
+    if (item.person_name.startsWith('~')) {
+      const base = item.person_name.substring(1);
+      return item.confidence >= 0.25 ? base : base + ' ?';
+    }
+    return item.person_name;
   }
 
   private loadData(): void {

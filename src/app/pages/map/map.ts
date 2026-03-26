@@ -74,7 +74,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   graphAvailable = signal(false);
   loadingRoute = signal(false);
   routeError = signal('');
-  searchInput = '';
+  searchInput = signal('');
   searchedName = signal('');
   hoursBack = 24;
   windowSeconds = 180;
@@ -83,7 +83,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   forensicPersons = signal<Person[]>([]);
   showForensicDropdown = signal(false);
   filteredForensicPersons = computed(() => {
-    const q = this.searchInput.toLowerCase().trim();
+    const q = this.searchInput().toLowerCase().trim();
     const list = this.forensicPersons();
     if (!q) return list;
     return list.filter(p => p.name.toLowerCase().includes(q));
@@ -460,13 +460,13 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   }
 
   selectForensicPerson(person: Person): void {
-    this.searchInput = person.name;
+    this.searchInput.set(person.name);
     this.showForensicDropdown.set(false);
     this.searchRoute();
   }
 
   searchRoute(): void {
-    const name = this.searchInput.trim();
+    const name = this.searchInput().trim();
     if (!name) return;
     this.showForensicDropdown.set(false);
     this.searchedName.set(name);

@@ -288,7 +288,8 @@
         <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Buscar persona</p>
         <div class="relative">
           <div class="flex gap-2">
-            <input [(ngModel)]="searchInput"
+            <input [ngModel]="searchInput()"
+                   (ngModelChange)="searchInput.set($event)"
                    (keyup.enter)="searchRoute(); showForensicDropdown.set(false)"
                    (input)="showForensicDropdown.set(true)"
                    (focus)="showForensicDropdown.set(true)"
@@ -297,7 +298,7 @@
                    class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white
                           placeholder-gray-600 focus:outline-none focus:border-amber-500 transition-colors"/>
             <button (click)="searchRoute(); showForensicDropdown.set(false)"
-                    [disabled]="!searchInput.trim() || loadingRoute()"
+                    [disabled]="!searchInput().trim() || loadingRoute()"
                     class="px-3 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 rounded-lg
                            transition-colors flex items-center justify-center">
               <svg *ngIf="!loadingRoute()" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
