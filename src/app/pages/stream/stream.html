@@ -743,7 +743,7 @@
 
     <!-- Face Identification Sidebar -->
     @if (showFaceSidebar()) {
-    <app-face-sidebar class="w-[280px] flex-shrink-0 h-full"></app-face-sidebar>
+    <app-face-sidebar class="w-[280px] flex-shrink-0 h-full" (cameraSelected)="goSingle($event)"></app-face-sidebar>
     }
     </div> <!-- End Video + Sidebar wrapper -->
     

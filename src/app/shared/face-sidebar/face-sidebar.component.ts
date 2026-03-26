@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AlertService } from '../../core/services/alert.service';
 import { FaceIdentifiedPayload } from '../../core/models/alert.model';
@@ -62,7 +62,7 @@ import { FaceIdentifiedPayload } from '../../core/models/alert.model';
                 <button (click)="selectPerson(entry.name)"
                   class="w-full flex items-center justify-between px-3 py-2 text-xs text-left hover:bg-gray-750 transition-colors border-b border-gray-800 last:border-0">
                   <span class="truncate"
-                    [class.text-white]="entry.name !== 'Desconocido' && !entry.name.startsWith('~')"
+                    [class.text-green-400]="entry.name !== 'Desconocido' && !entry.name.startsWith('~')"
                     [class.text-red-400]="entry.name === 'Desconocido'"
                     [class.text-yellow-400]="entry.name.startsWith('~')">
                     {{ displayName(entry.name) }}
@@ -104,13 +104,14 @@ import { FaceIdentifiedPayload } from '../../core/models/alert.model';
           </div>
         } @else {
           @for (item of filteredIdentifications(); track item.track_id + '_' + item.timestamp) {
-            <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-700/30 hover:bg-gray-750 transition-colors"
+            <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-700/30 hover:bg-gray-750 transition-colors cursor-pointer"
                  [class.bg-red-900/10]="item.person_name === 'Desconocido'"
-                 [class.bg-yellow-900/10]="item.person_name.startsWith('~')">
+                 [class.bg-yellow-900/10]="isUncertain(item)"
+                 (click)="selectCamera(item)">
 
               <!-- Thumbnail (click to expand) -->
               <div class="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-gray-700 border border-gray-600/50 cursor-pointer hover:ring-2 hover:ring-blue-500/50 transition-all"
-                   (click)="item.thumbnail ? expandImage(item) : null">
+                   (click)="item.thumbnail ? expandImage(item) : null; $event.stopPropagation()">
                 @if (item.thumbnail) {
                   <img [src]="alertService.identificationThumbnailUrl(item.thumbnail)"
                        (error)="$event.target.style.display='none'"
@@ -128,12 +129,12 @@ import { FaceIdentifiedPayload } from '../../core/models/alert.model';
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2">
                   <span class="text-sm font-semibold truncate"
-                    [class.text-white]="!isUnknown(item.person_name)"
+                    [class.text-green-400]="isIdentified(item)"
                     [class.text-red-400]="item.person_name === 'Desconocido'"
-                    [class.text-yellow-400]="item.person_name.startsWith('~')">
-                    {{ displayName(item.person_name) }}
+                    [class.text-yellow-400]="isUncertain(item)">
+                    {{ displayItemName(item) }}
                   </span>
-                  @if (!isUnknown(item.person_name)) {
+                  @if (isIdentified(item)) {
                     <span class="w-2 h-2 rounded-full flex-shrink-0"
                       [class.bg-green-400]="item.confidence >= 0.6"
                       [class.bg-yellow-400]="item.confidence >= 0.4 && item.confidence < 0.6"
@@ -145,7 +146,7 @@ import { FaceIdentifiedPayload } from '../../core/models/alert.model';
                   <span>{{ item.camera_name || 'Cam' + item.source_id }}</span>
                   <span>&middot;</span>
                   <span>{{ formatTime(item.timestamp) }}</span>
-                  @if (!isUnknown(item.person_name)) {
+                  @if (item.person_name !== 'Desconocido') {
                     <span>&middot;</span>
                     <span class="text-blue-400">{{ (item.confidence * 100).toFixed(0) }}%</span>
                   }
@@ -173,15 +174,15 @@ import { FaceIdentifiedPayload } from '../../core/models/alert.model';
             <!-- Info below image -->
             <div class="bg-gray-900/90 backdrop-blur rounded-lg px-5 py-3 border border-gray-700 text-center shadow-xl">
               <p class="text-lg font-bold"
-                [class.text-white]="!isUnknown(expandedItem()!.person_name)"
+                [class.text-green-400]="isIdentified(expandedItem()!)"
                 [class.text-red-400]="expandedItem()!.person_name === 'Desconocido'"
-                [class.text-yellow-400]="expandedItem()!.person_name.startsWith('~')">
-                {{ displayName(expandedItem()!.person_name) }}
+                [class.text-yellow-400]="isUncertain(expandedItem()!)">
+                {{ displayItemName(expandedItem()!) }}
               </p>
               <p class="text-xs text-gray-400 mt-1">
                 {{ expandedItem()!.camera_name || 'Cam' + expandedItem()!.source_id }}
                 &middot; {{ formatTime(expandedItem()!.timestamp) }}
-                @if (!isUnknown(expandedItem()!.person_name)) {
+                @if (isIdentified(expandedItem()!)) {
                   &middot; <span class="text-blue-400">{{ (expandedItem()!.confidence * 100).toFixed(1) }}%</span>
                 }
               </p>
@@ -205,6 +206,9 @@ export class FaceSidebarComponent {
   readonly alertService = inject(AlertService);
   readonly identifications = this.alertService.identifications;
   readonly expandedItem = signal<FaceIdentifiedPayload | null>(null);
+
+  /** Emits the source_id when user clicks on an identification row */
+  readonly cameraSelected = output<number>();
 
   // Filter state
   readonly searchQuery = signal('');
@@ -259,6 +263,10 @@ export class FaceSidebarComponent {
     this.showDropdown.set(false);
   }
 
+  selectCamera(item: FaceIdentifiedPayload): void {
+    this.cameraSelected.emit(item.source_id);
+  }
+
   expandImage(item: FaceIdentifiedPayload): void {
     this.expandedItem.set(item);
   }
@@ -280,10 +288,31 @@ export class FaceSidebarComponent {
     return name === 'Desconocido' || name.startsWith('~');
   }
 
+  /** Item-level: treat ~name with confidence >= 25% as identified */
+  isIdentified(item: FaceIdentifiedPayload): boolean {
+    if (item.person_name === 'Desconocido') return false;
+    if (item.person_name.startsWith('~')) return item.confidence >= 0.25;
+    return true;
+  }
+
+  /** Item-level: uncertain only if ~name AND confidence < 25% */
+  isUncertain(item: FaceIdentifiedPayload): boolean {
+    return item.person_name.startsWith('~') && item.confidence < 0.25;
+  }
+
   displayName(name: string): string {
     if (name.startsWith('~')) {
       return name.substring(1) + ' ?';
     }
     return name;
+  }
+
+  /** Display name considering confidence: if >= 25%, drop the "?" */
+  displayItemName(item: FaceIdentifiedPayload): string {
+    if (item.person_name.startsWith('~')) {
+      const baseName = item.person_name.substring(1);
+      return item.confidence >= 0.25 ? baseName : baseName + ' ?';
+    }
+    return item.person_name;
   }
 }
