@@ -174,65 +174,96 @@
       </div>
 
       <!-- Tracking results -->
-      <div *ngIf="trackedPerson() && trackingResult()" class="flex-1 overflow-y-auto p-3 space-y-3">
+      <div *ngIf="trackedPerson() && huntResult()" class="flex-1 overflow-y-auto p-3 space-y-3">
+
+        <!-- Status bar -->
+        <div class="rounded-lg p-2.5 text-center font-bold text-sm"
+             [class.bg-green-900/50]="huntStatus() === 'live'"
+             [class.border]="true"
+             [class.border-green-600]="huntStatus() === 'live'"
+             [class.text-green-300]="huntStatus() === 'live'"
+             [class.bg-cyan-900/40]="huntStatus() === 'searching'"
+             [class.border-cyan-600]="huntStatus() === 'searching'"
+             [class.text-cyan-300]="huntStatus() === 'searching'"
+             [class.bg-gray-900]="huntStatus() === 'idle'"
+             [class.border-gray-600]="huntStatus() === 'idle'"
+             [class.text-gray-400]="huntStatus() === 'idle'">
+          <span *ngIf="huntStatus() === 'live'" class="flex items-center justify-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-green-400 animate-pulse"></span>
+            EN VIVO · {{ huntResult()!.live_count }} cámara(s)
+          </span>
+          <span *ngIf="huntStatus() === 'searching'" class="flex items-center justify-center gap-2">
+            <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            BUSCANDO EN {{ huntResult()!.cameras.length }} CÁMARAS
+          </span>
+          <span *ngIf="huntStatus() === 'idle'">
+            SIN DETECCIONES
+          </span>
+        </div>
 
         <!-- Live cameras -->
-        <div *ngIf="trackingResult()!.live.length > 0">
+        <div *ngIf="huntLiveCameras().length > 0">
           <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-2 flex items-center gap-1.5">
             <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
             En vivo ahora
           </p>
           <div class="space-y-1.5">
-            <button *ngFor="let cam of trackingResult()!.live"
+            <button *ngFor="let cam of huntLiveCameras()"
                     (click)="jumpToCamera(cam.camara)"
                     class="w-full text-left bg-gray-900 rounded-lg p-2.5 border border-green-800/40 hover:border-green-500/60 transition-colors">
               <div class="flex items-center gap-2">
                 <div class="w-2.5 h-2.5 rounded-full bg-green-400 flex-shrink-0 animate-pulse"></div>
                 <span class="font-semibold text-sm text-green-300 truncate">{{ cam.camara }}</span>
-                <span *ngIf="cam.confianza != null" class="ml-auto text-xs text-green-500 font-bold">
+                <span *ngIf="cam.confianza" class="ml-auto text-xs text-green-500 font-bold">
                   {{ (cam.confianza * 100).toFixed(0) }}%
                 </span>
-              </div>
-              <div class="mt-1 text-xs text-gray-500 pl-5">
-                Desde {{ formatTs(cam.inicio) }} · {{ formatDuration(cam.duracion_s) }}
               </div>
             </button>
           </div>
         </div>
 
-        <!-- Recent cameras -->
-        <div *ngIf="trackingResult()!.recent.length > 0">
+        <!-- Search cameras (adjacent + recent) -->
+        <div *ngIf="huntSearchCameras().length > 0">
           <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-2 flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-            Visto recientemente
+            <svg class="w-3.5 h-3.5 text-cyan-400 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            Vigilando
           </p>
           <div class="space-y-1.5">
-            <button *ngFor="let cam of trackingResult()!.recent"
+            <button *ngFor="let cam of huntSearchCameras()"
                     (click)="jumpToCamera(cam.camara)"
-                    class="w-full text-left bg-gray-900 rounded-lg p-2.5 border border-amber-800/30 hover:border-amber-500/50 transition-colors">
+                    class="w-full text-left bg-gray-900 rounded-lg p-2.5 border border-gray-700 hover:border-cyan-600/50 transition-colors">
               <div class="flex items-center gap-2">
-                <div class="w-2.5 h-2.5 rounded-full bg-amber-400 flex-shrink-0"></div>
-                <span class="font-semibold text-sm text-amber-300 truncate">{{ cam.camara }}</span>
-                <span *ngIf="cam.confianza != null" class="ml-auto text-xs text-amber-500 font-bold">
-                  {{ (cam.confianza * 100).toFixed(0) }}%
+                <div class="w-2 h-2 rounded-full flex-shrink-0"
+                     [class.bg-amber-400]="cam.reason === 'adjacent_live'"
+                     [class.bg-amber-600]="cam.reason === 'recent'"
+                     [class.bg-gray-500]="cam.reason === 'adjacent_recent'"></div>
+                <span class="font-semibold text-sm truncate"
+                      [class.text-amber-300]="cam.reason === 'adjacent_live' || cam.reason === 'recent'"
+                      [class.text-gray-400]="cam.reason === 'adjacent_recent'">{{ cam.camara }}</span>
+                <span class="ml-auto text-xs font-mono"
+                      [class.text-amber-600]="cam.reason === 'adjacent_live'"
+                      [class.text-amber-700]="cam.reason === 'recent'"
+                      [class.text-gray-600]="cam.reason === 'adjacent_recent'">
+                  {{ cam.reason === 'adjacent_live' ? 'ADY' : cam.reason === 'recent' ? 'REC' : 'ADY-R' }}
                 </span>
-              </div>
-              <div class="mt-1 text-xs text-gray-500 pl-5">
-                {{ formatTs(cam.fin ?? cam.inicio) }}
               </div>
             </button>
           </div>
         </div>
 
         <!-- Empty tracking state -->
-        <div *ngIf="trackingResult()!.live.length === 0 && trackingResult()!.recent.length === 0"
+        <div *ngIf="huntResult()!.cameras.length === 0"
              class="text-center py-8 text-gray-600">
           <svg class="w-10 h-10 mx-auto mb-2 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
               d="M15 12a3 3 0 11-6 0 3 3 0 016 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"/>
           </svg>
           <p class="text-sm">No se detecta a {{ trackedPerson()!.name }}</p>
-          <p class="text-xs mt-1 text-gray-700">Buscando cada 3s...</p>
+          <p class="text-xs mt-1 text-gray-700">Buscando cada 2s...</p>
         </div>
       </div>
 
@@ -690,8 +721,8 @@
 
     <!-- Legend -->
     <div class="absolute bottom-4 right-4 bg-gray-900/90 backdrop-blur border border-gray-700 rounded-lg p-3 text-xs z-10 space-y-1.5"
-         [class.bottom-4]="!showTrackingFeed() || !trackingFeedUrl()"
-         [class.hidden]="showTrackingFeed() && trackingFeedUrl()">
+         [class.bottom-4]="!showTrackingFeed() || !huntMosaicUrl()"
+         [class.hidden]="showTrackingFeed() && huntMosaicUrl()">>
       <div class="flex items-center gap-2">
         <div class="w-3 h-3 rounded-full bg-blue-500 border-2 border-blue-700"></div>
         <span class="text-gray-400">Cámara registrada</span>
@@ -722,46 +753,46 @@
       </div>
     </div>
 
-    <!-- ── Tracking Camera Feed ── -->
-    <div *ngIf="mode() === 'tracking' && showTrackingFeed() && trackingFeedUrl()"
-         class="absolute z-[450] transition-all duration-300 shadow-2xl"
-         [class]="trackingFeedExpanded()
-           ? 'inset-0'
-           : 'bottom-4 right-4 w-[420px] rounded-lg overflow-hidden'">
+    <!-- ── Tracking Camera Mosaic ── -->
+    <div *ngIf="mode() === 'tracking' && showTrackingFeed() && huntMosaicUrl()"
+         class="absolute inset-0 z-[450] bg-black flex flex-col">
       <!-- Header bar -->
-      <div class="flex items-center gap-2 px-3 py-2 bg-gray-900/95 border-b border-gray-700"
-           [class.rounded-t-lg]="!trackingFeedExpanded()">
-        <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-        <span class="text-xs font-semibold text-green-300 truncate flex-1">
-          {{ trackingFeedCamera() || 'Cámara en vivo' }}
+      <div class="flex items-center gap-2 px-3 py-2 bg-gray-900/95 border-b border-gray-700">
+        <!-- Status indicator -->
+        <span *ngIf="huntStatus() === 'live'" class="w-3 h-3 rounded-full bg-green-400 animate-pulse"></span>
+        <span *ngIf="huntStatus() === 'searching'" class="w-3 h-3 rounded-full bg-cyan-400 animate-pulse"></span>
+        <span class="text-xs font-bold truncate flex-1"
+              [class.text-green-300]="huntStatus() === 'live'"
+              [class.text-cyan-300]="huntStatus() === 'searching'">
+          <span *ngIf="huntStatus() === 'live'">
+            EN VIVO — {{ huntLiveCameras()[0]?.camara }}
+            <span *ngIf="huntLiveCameras().length > 1"> + {{ huntLiveCameras().length - 1 }} más</span>
+          </span>
+          <span *ngIf="huntStatus() === 'searching'">
+            BUSCANDO EN {{ huntResult()!.cameras.length }} CÁMARAS
+          </span>
         </span>
-        <!-- Expand/collapse -->
-        <button (click)="toggleFeedExpanded()"
-                class="p-1 hover:bg-gray-700 rounded transition-colors text-gray-400 hover:text-white"
-                [title]="trackingFeedExpanded() ? 'Minimizar' : 'Expandir'">
-          <svg *ngIf="!trackingFeedExpanded()" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
-          </svg>
-          <svg *ngIf="trackingFeedExpanded()" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25"/>
-          </svg>
-        </button>
+        <!-- Camera count badge -->
+        <span class="text-xs px-2 py-0.5 rounded-full font-bold"
+              [class.bg-green-900]="huntStatus() === 'live'"
+              [class.text-green-300]="huntStatus() === 'live'"
+              [class.bg-cyan-900]="huntStatus() === 'searching'"
+              [class.text-cyan-300]="huntStatus() === 'searching'">
+          {{ huntResult()!.cameras.length }} cam
+        </span>
         <!-- Close -->
-        <button (click)="toggleTrackingFeed()"
+        <button (click)="showTrackingFeed.set(false)"
                 class="p-1 hover:bg-gray-700 rounded transition-colors text-gray-400 hover:text-white"
-                title="Cerrar feed">
+                title="Cerrar mosaico">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
           </svg>
         </button>
       </div>
-      <!-- MJPEG stream -->
-      <img [src]="trackingFeedUrl()"
-           class="w-full bg-black"
-           [class.h-[calc(100%-36px)]]="trackingFeedExpanded()"
-           [class.object-contain]="trackingFeedExpanded()"
-           alt="Feed en vivo"
-           style="aspect-ratio: 16/9; object-fit: cover;"
+      <!-- MJPEG mosaic stream -->
+      <img [src]="huntMosaicUrl()"
+           class="flex-1 w-full object-contain bg-black"
+           alt="Mosaico de seguimiento"
            (error)="showTrackingFeed.set(false)"/>
     </div>
   </div>

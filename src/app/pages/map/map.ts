@@ -16,7 +16,7 @@ import { GraphQueryService } from '../../core/services/graph-query.service';
 import { StreamService } from '../../core/services/stream.service';
 import { FacesService } from '../../core/services/faces.service';
 import { RtspSource } from '../../core/models/stream.model';
-import { ActiveSession, Cooccurrence, RouteEntry, RouteEntryWithAnomaly, SessionTier, TrackingResult } from '../../core/models/graph.model';
+import { ActiveSession, Cooccurrence, RouteEntry, RouteEntryWithAnomaly, SessionTier, TrackingResult, HuntResult, HuntCamera } from '../../core/models/graph.model';
 import { Person } from '../../core/models/face.model';
 
 type MapMode = 'live' | 'forensic' | 'tracking';
@@ -109,6 +109,36 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     return result?.live?.[0]?.camara ?? '';
   });
 
+  // ── Hunt (aggressive tracking) ─────────────────────────────────────────
+  huntResult = signal<HuntResult | null>(null);
+  huntMosaicUrl = computed(() => {
+    const hunt = this.huntResult();
+    const sources = this.streamSources();
+    if (!hunt || hunt.cameras.length === 0 || sources.length === 0) return '';
+    // Map rtsp_url → stream index
+    const indices = hunt.cameras
+      .map(c => sources.indexOf(c.rtsp_url))
+      .filter(i => i >= 0);
+    if (indices.length === 0) return '';
+    if (indices.length === 1) return `${this.streamSvc.viewUrl}?camera=${indices[0]}`;
+    return `${this.streamSvc.viewUrl}?cameras=${indices.join(',')}`;
+  });
+  huntLiveCameras = computed(() => {
+    const hunt = this.huntResult();
+    return hunt ? hunt.cameras.filter(c => c.reason === 'live') : [];
+  });
+  huntSearchCameras = computed(() => {
+    const hunt = this.huntResult();
+    return hunt ? hunt.cameras.filter(c => c.reason !== 'live') : [];
+  });
+  huntStatus = computed<'live' | 'searching' | 'idle'>(() => {
+    const hunt = this.huntResult();
+    if (!hunt) return 'idle';
+    if (hunt.live_count > 0) return 'live';
+    if (hunt.cameras.length > 0) return 'searching';
+    return 'idle';
+  });
+
   // ── Playback ───────────────────────────────────────────────────────────────
   isPlaying = signal(false);
   playbackSpeed = signal(1);  // 1× 2× 5× 10×
@@ -187,12 +217,12 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     return list.filter(p => p.name.toLowerCase().includes(f));
   });
   trackingLiveCameras = computed(() => {
-    const r = this.trackingResult();
-    return r ? r.live.map(c => c.camara) : [];
+    const h = this.huntResult();
+    return h ? h.cameras.filter(c => c.reason === 'live').map(c => c.camara) : [];
   });
   trackingRecentCameras = computed(() => {
-    const r = this.trackingResult();
-    return r ? r.recent.map(c => c.camara) : [];
+    const h = this.huntResult();
+    return h ? h.cameras.filter(c => c.reason !== 'live').map(c => c.camara) : [];
   });
 
   // ── Leaflet internals ──────────────────────────────────────────────────────
@@ -647,6 +677,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     this.stopPoll();
     this.trackedPerson.set(null);
     this.trackingResult.set(null);
+    this.huntResult.set(null);
     this.showTrackingFeed.set(false);
     this.trackingFeedExpanded.set(false);
     this.trackingCameraIdx.set(-1);
@@ -661,30 +692,47 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       error: () => this.streamSources.set([]),
     });
     this.pollTracking();
-    this.pollTimer = setInterval(() => this.pollTracking(), 3000);
+    this.pollTimer = setInterval(() => this.pollTracking(), 2000);
   }
 
   private pollTracking(): void {
     const person = this.trackedPerson();
     if (!person) return;
-    // Also refresh active sessions to know who is currently on camera
+    // Refresh active sessions for map overlay
     this.graphSvc.getActive().subscribe({
       next: sessions => this.activeSessions.set(sessions),
     });
-    this.graphSvc.getTracking(person.name).subscribe({
-      next: result => {
-        this.trackingResult.set(result);
-        this.renderTracking(result);
+    // Use hunt endpoint for aggressive tracking
+    this.graphSvc.getHunt(person.name).subscribe({
+      next: hunt => {
+        this.huntResult.set(hunt);
         this.graphAvailable.set(true);
 
-        // Resolve camera index (only update when it changes to avoid reconnect)
-        if (result.live.length > 0) {
-          const liveUrl = result.live[0].rtsp_url;
-          const idx = this.streamSources().indexOf(liveUrl);
-          if (idx !== this.trackingCameraIdx()) this.trackingCameraIdx.set(idx);
-          if (idx >= 0 && !this.showTrackingFeed()) this.showTrackingFeed.set(true);
+        // Also build a trackingResult for map rendering
+        const live = hunt.cameras.filter(c => c.reason === 'live').map(c => ({
+          camara: c.camara, rtsp_url: c.rtsp_url, inicio: 0,
+          fin: null, duracion_s: null, confianza: c.confianza, tier: c.tier as SessionTier,
+        }));
+        const recent = hunt.cameras.filter(c => c.reason !== 'live').map(c => ({
+          camara: c.camara, rtsp_url: c.rtsp_url, inicio: 0,
+          fin: null, duracion_s: null, confianza: c.confianza, tier: c.tier as SessionTier,
+        }));
+        this.trackingResult.set({ persona: hunt.persona, live, recent });
+        this.renderTracking({ persona: hunt.persona, live, recent });
+
+        // Auto-show mosaic feed when there are cameras to watch
+        if (hunt.cameras.length > 0) {
+          // For camera index, use the first live camera if available
+          if (hunt.live_count > 0) {
+            const liveUrl = hunt.cameras[0].rtsp_url;
+            const idx = this.streamSources().indexOf(liveUrl);
+            if (idx !== this.trackingCameraIdx()) this.trackingCameraIdx.set(idx);
+          } else {
+            this.trackingCameraIdx.set(-1);
+          }
+          if (!this.showTrackingFeed()) this.showTrackingFeed.set(true);
         } else {
-          if (this.trackingCameraIdx() !== -1) this.trackingCameraIdx.set(-1);
+          if (this.showTrackingFeed()) this.showTrackingFeed.set(false);
         }
       },
       error: () => this.graphAvailable.set(false),

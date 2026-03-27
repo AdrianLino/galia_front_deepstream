@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { ActiveSession, Cooccurrence, GraphHealth, RouteEntry, RouteEntryWithAnomaly, TrackingResult } from '../models/graph.model';
+import { ActiveSession, Cooccurrence, GraphHealth, HuntResult, RouteEntry, RouteEntryWithAnomaly, TrackingResult } from '../models/graph.model';
 
 import { environment } from '../../../environments/environment';
 
@@ -43,6 +43,13 @@ export class GraphQueryService {
   getTracking(personName: string, recentMinutes = 10): Observable<TrackingResult> {
     return this.http.get<TrackingResult>(
       `${API}/track/${encodeURIComponent(personName)}`,
+      { params: { recent_minutes: recentMinutes } }
+    );
+  }
+
+  getHunt(personName: string, recentMinutes = 10): Observable<HuntResult> {
+    return this.http.get<HuntResult>(
+      `${API}/track/${encodeURIComponent(personName)}/hunt`,
       { params: { recent_minutes: recentMinutes } }
     );
   }

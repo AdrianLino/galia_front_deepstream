@@ -61,3 +61,19 @@ export interface TrackingResult {
   live: TrackingCamera[];
   recent: TrackingCamera[];
 }
+
+export type HuntReason = 'live' | 'adjacent_live' | 'recent' | 'adjacent_recent';
+
+export interface HuntCamera {
+  camara: string;
+  rtsp_url: string;
+  reason: HuntReason;
+  confianza: number;
+  tier: SessionTier;
+}
+
+export interface HuntResult {
+  persona: string;
+  cameras: HuntCamera[];
+  live_count: number;
+}
