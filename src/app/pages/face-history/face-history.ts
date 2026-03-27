@@ -70,18 +70,57 @@ import {
           </button>
         </div>
 
-        <!-- Person dropdown -->
-        <div class="flex flex-col gap-0.5">
+        <!-- Person search with autocomplete -->
+        <div class="flex flex-col gap-0.5 relative">
           <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Persona</label>
-          <select [(ngModel)]="filterPerson"
-                  (ngModelChange)="applyFilters()"
-                  [disabled]="faceSearchMode() === 'unknown'"
-                  class="bg-gray-900 border border-gray-700 rounded-lg text-xs text-white px-2 py-1 min-w-[160px] focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50">
-            <option value="">Todas</option>
-            @for (p of persons(); track p.person_name) {
-              <option [value]="p.person_name">{{ p.person_name }} ({{ p.count }})</option>
+          <div class="relative">
+            <svg class="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <input type="text"
+              [value]="personSearchQuery()"
+              (input)="onPersonSearchInput($event)"
+              (focus)="showPersonDropdown.set(true)"
+              [disabled]="faceSearchMode() === 'unknown'"
+              placeholder="Buscar persona..."
+              class="bg-gray-900 border border-gray-700 rounded-lg text-xs text-white pl-7 pr-7 py-1 min-w-[200px] focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50" />
+            @if (personSearchQuery() || filterPerson) {
+              <button (click)="clearPersonFilter()"
+                class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors">
+                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
             }
-          </select>
+          </div>
+
+          <!-- Active filter chip -->
+          @if (filterPerson && !showPersonDropdown()) {
+            <div class="flex items-center gap-1 mt-0.5">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                <span class="truncate max-w-[160px]">{{ filterPerson }}</span>
+                <button (click)="clearPersonFilter()" class="hover:text-white ml-0.5">&times;</button>
+              </span>
+            </div>
+          }
+
+          <!-- Autocomplete dropdown -->
+          @if (showPersonDropdown() && filteredPersons().length > 0) {
+            <div class="absolute left-0 right-0 top-full mt-1 z-50 bg-gray-900 border border-gray-700 rounded-lg shadow-xl max-h-56 overflow-y-auto custom-scrollbar">
+              @for (p of filteredPersons(); track p.person_name) {
+                <button (click)="selectPerson(p.person_name)"
+                  class="w-full flex items-center justify-between px-3 py-2 text-xs text-left hover:bg-gray-750 transition-colors border-b border-gray-800 last:border-0">
+                  <span class="truncate"
+                    [class.text-green-400]="!p.person_name.startsWith('~') && p.person_name !== 'Desconocido'"
+                    [class.text-red-400]="p.person_name === 'Desconocido'"
+                    [class.text-yellow-400]="p.person_name.startsWith('~')">
+                    {{ personDisplayName(p.person_name) }}
+                  </span>
+                  <span class="text-[10px] text-gray-500 ml-2 flex-shrink-0">{{ p.count }}</span>
+                </button>
+              }
+            </div>
+          }
         </div>
 
         <!-- Date from -->
@@ -122,7 +161,7 @@ import {
                 Coincidencia encontrada: {{ faceSearchPersonName() }}
               </p>
               <p class="text-[10px] text-green-400/70">
-                Confianza: {{ (faceSearchConfidence() * 100).toFixed(0) }}% — Mostrando registros de esta persona
+                Confianza: {{ (faceSearchConfidence() * 100).toFixed(0) }}% — {{ total() }} registros (incluyendo inciertos)
               </p>
             } @else {
               <p class="text-xs font-bold text-amber-400">
@@ -141,7 +180,7 @@ import {
       }
 
       <!-- Table -->
-      <div class="bg-gray-800/40 rounded-lg border border-gray-700/40 overflow-hidden">
+      <div class="bg-gray-800/40 rounded-lg border border-gray-700/40 overflow-hidden" (click)="showPersonDropdown.set(false)">
         @if (loading()) {
           <div class="py-10 text-center">
             <div class="inline-block w-6 h-6 border-2 border-gray-600 border-t-indigo-400 rounded-full animate-spin"></div>
@@ -269,6 +308,10 @@ import {
     :host { display: block; }
     select option { background: #111827; color: #fff; }
     input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert(1); }
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 2px; }
+    .bg-gray-750 { background-color: #2d3748; }
   `]
 })
 export class FaceHistoryComponent implements OnInit {
@@ -293,6 +336,18 @@ export class FaceHistoryComponent implements OnInit {
   filterFrom = '';
   filterTo = '';
   readonly pageSize = 50;
+
+  /** Person autocomplete state */
+  readonly personSearchQuery = signal('');
+  readonly showPersonDropdown = signal(false);
+  readonly filteredPersons = computed(() => {
+    const q = this.personSearchQuery().toLowerCase().trim();
+    const all = this.persons();
+    if (!q) return all;
+    return all.filter(p =>
+      this.personDisplayName(p.person_name).toLowerCase().includes(q)
+    );
+  });
 
   readonly currentPage = signal(1);
   readonly offset = computed(() => (this.currentPage() - 1) * this.pageSize);
@@ -325,9 +380,40 @@ export class FaceHistoryComponent implements OnInit {
     this.loadData();
   }
 
+  onPersonSearchInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.personSearchQuery.set(value);
+    this.showPersonDropdown.set(true);
+    if (!value && this.filterPerson) {
+      this.filterPerson = '';
+      this.applyFilters();
+    }
+  }
+
+  selectPerson(name: string): void {
+    this.filterPerson = name;
+    this.personSearchQuery.set(this.personDisplayName(name));
+    this.showPersonDropdown.set(false);
+    this.applyFilters();
+  }
+
+  clearPersonFilter(): void {
+    this.filterPerson = '';
+    this.personSearchQuery.set('');
+    this.showPersonDropdown.set(false);
+    this.applyFilters();
+  }
+
+  personDisplayName(name: string): string {
+    if (name.startsWith('~')) return name.substring(1) + ' ?';
+    return name;
+  }
+
   clearFilters(): void {
     this.clearFaceSearch();
     this.filterPerson = '';
+    this.personSearchQuery.set('');
+    this.showPersonDropdown.set(false);
     this.filterFrom = '';
     this.filterTo = '';
     this.currentPage.set(1);
@@ -337,7 +423,7 @@ export class FaceHistoryComponent implements OnInit {
   goPage(page: number): void {
     if (page < 1 || page > this.totalPages()) return;
     this.currentPage.set(page);
-    if (this.faceSearchMode() === 'unknown') {
+    if (this.faceSearchMode()) {
       // Paginate locally over the face search results
       this.paginateUnknownResults();
     } else {
@@ -360,15 +446,15 @@ export class FaceHistoryComponent implements OnInit {
     }
   }
 
-  /** ~name with confidence >= 25% counts as identified */
+  /** ~name with confidence < 30% is uncertain */
   isUncertain(item: FaceHistoryItem): boolean {
-    return item.person_name.startsWith('~') && item.confidence < 0.25;
+    return item.person_name.startsWith('~') && item.confidence < 0.30;
   }
 
   displayName(item: FaceHistoryItem): string {
     if (item.person_name.startsWith('~')) {
       const base = item.person_name.substring(1);
-      return item.confidence >= 0.25 ? base : base + ' ?';
+      return item.confidence >= 0.30 ? base : base + ' ?';
     }
     return item.person_name;
   }
@@ -413,13 +499,15 @@ export class FaceHistoryComponent implements OnInit {
 
   private handleFaceSearchResult(res: FaceSearchResult): void {
     if (res.match_type === 'known' && res.person_name) {
-      // Known person — auto-filter by name
+      // Known person — show all matching records (confirmed + uncertain + visual matches)
       this.faceSearchMode.set('known');
       this.faceSearchPersonName.set(res.person_name);
       this.faceSearchConfidence.set(res.confidence);
-      this.filterPerson = res.person_name;
+      this._allUnknownItems = res.items;
+      this.total.set(res.total);
       this.currentPage.set(1);
-      this.loadData();
+      this.paginateUnknownResults();
+      this.loading.set(false);
     } else if (res.match_type === 'unknown' && res.items.length > 0) {
       // Unknown person — show matching records directly
       this.faceSearchMode.set('unknown');

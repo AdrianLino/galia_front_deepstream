@@ -114,7 +114,7 @@ import { FaceIdentifiedPayload } from '../../core/models/alert.model';
                    (click)="item.thumbnail ? expandImage(item) : null; $event.stopPropagation()">
                 @if (item.thumbnail) {
                   <img [src]="alertService.identificationThumbnailUrl(item.thumbnail)"
-                       (error)="$event.target.style.display='none'"
+                       (error)="onThumbError($event, item.thumbnail!)"
                        class="w-full h-full object-cover" alt="" />
                 } @else {
                   <div class="w-full h-full flex items-center justify-center">
@@ -284,20 +284,44 @@ export class FaceSidebarComponent {
     }
   }
 
+  private readonly _thumbRetries = new Map<string, number>();
+  private static readonly _PLACEHOLDER =
+    'data:image/svg+xml,' +
+    encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="%236b7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM12 14a7 7 0 0 0-7 7h14a7 7 0 0 0-7-7z"/></svg>'
+    );
+
+  onThumbError(event: Event, thumbnail: string): void {
+    const img = event.target as HTMLImageElement;
+    const count = (this._thumbRetries.get(thumbnail) ?? 0) + 1;
+    this._thumbRetries.set(thumbnail, count);
+    if (count <= 3) {
+      setTimeout(() => {
+        img.src =
+          this.alertService.identificationThumbnailUrl(thumbnail) +
+          '?r=' + count;
+      }, 600 * count);
+    } else {
+      img.src = FaceSidebarComponent._PLACEHOLDER;
+      img.classList.remove('object-cover');
+      img.classList.add('p-2');
+    }
+  }
+
   isUnknown(name: string): boolean {
     return name === 'Desconocido' || name.startsWith('~');
   }
 
-  /** Item-level: treat ~name with confidence >= 25% as identified */
+  /** Only firm identifications or ~name with >= 30% are truly identified */
   isIdentified(item: FaceIdentifiedPayload): boolean {
     if (item.person_name === 'Desconocido') return false;
-    if (item.person_name.startsWith('~')) return item.confidence >= 0.25;
+    if (item.person_name.startsWith('~')) return item.confidence >= 0.30;
     return true;
   }
 
-  /** Item-level: uncertain only if ~name AND confidence < 25% */
+  /** ~name with confidence < 30% is uncertain */
   isUncertain(item: FaceIdentifiedPayload): boolean {
-    return item.person_name.startsWith('~') && item.confidence < 0.25;
+    return item.person_name.startsWith('~') && item.confidence < 0.30;
   }
 
   displayName(name: string): string {
@@ -307,11 +331,11 @@ export class FaceSidebarComponent {
     return name;
   }
 
-  /** Display name considering confidence: if >= 25%, drop the "?" */
+  /** Display name: ~name with >= 30% drops the ?, below shows ? */
   displayItemName(item: FaceIdentifiedPayload): string {
     if (item.person_name.startsWith('~')) {
       const baseName = item.person_name.substring(1);
-      return item.confidence >= 0.25 ? baseName : baseName + ' ?';
+      return item.confidence >= 0.30 ? baseName : baseName + ' ?';
     }
     return item.person_name;
   }
